@@ -2,7 +2,7 @@
 
 if [ -z "$CROSS_COMPILE" ]
 then
-  echo "Must export \$CROSS_COMPILE (set it to "none" for none)" >&2
+  echo "Must export \$CROSS_COMPILE (set it to \"none\" for none)" >&2
   exit 1
 fi
 
@@ -39,6 +39,12 @@ download 7bdf7253d5a5dbf7073e8f5ca0999a7928a63dae \
 
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
+
+download a4d316c404ff54ca545ea71a27af7dbc29817088 \
+  http://zlib.net/zlib-1.2.8.tar.gz
+
+download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
+  https://matt.ucc.asn.au/dropbear/releases/dropbear-2016.73.tar.bz2
 
 echo === Create files and directories
 
@@ -183,6 +189,33 @@ EOF
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
 LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $CPUS &&
 cd .. && rm -rf busybox-* || exit 1
+
+echo === Native build static zlib
+
+tar xvzf ../packages/zlib-*.tar.gz && cd zlib* &&
+# They keep checking in broken generated files.
+rm -f Makefile zconf.h &&
+CC=${CROSS_COMPILE}cc LD=${CROSS_COMPILE}ld AS=${CROSS_COMPILE}as ./configure &&
+make -j $CPUS &&
+cd .. || exit 1
+
+echo === $HOST Native build static dropbear
+
+tar xvjf ../packages/dropbear-*.tar.bz2 && cd dropbear* &&
+# Repeat after me: "autoconf is useless"
+echo 'echo "$@"' > config.sub &&
+ZLIB="$(echo ../zlib*)" &&
+CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
+  --host=${CROSS_COMPILE%-} &&
+sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
+make -j $CPUS PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
+${CROSS_COMPILE}strip dropbearmulti &&
+cp dropbearmulti $OUT/bin || exit 1
+for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
+do
+  ln -s dropbearmulti $i || exit 1
+done
+cd .. && rm -rf dropbear* zlib* || exit 1
 
 echo === create out.cpio.gz
 
