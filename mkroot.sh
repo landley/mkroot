@@ -114,6 +114,7 @@ echo === install busybox
 
 tar xvjf ../packages/busybox-*.tar.bz2 && cd busybox-* &&
 cat > mini.conf << EOF
+CONFIG_NOMMU=y
 CONFIG_DESKTOP=y
 CONFIG_LFS=y
 CONFIG_SHOW_USAGE=y
