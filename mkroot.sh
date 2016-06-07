@@ -79,7 +79,7 @@ route add default gw 10.0.2.2
 [ -z "$CONSOLE" ] &&
   CONSOLE="$(sed -n 's@.* console=\(/dev/\)*\([^ ]*\).*@\2@p' /proc/cmdline)"
 
-[ -z "$HANDOFF" ] && HANDOFF=/bin/hush
+[ -z "$HANDOFF" ] && HANDOFF=/bin/hush && echo Type exit when done.
 [ -z "$CONSOLE" ] && CONSOLE=console
 exec /sbin/oneit -c /dev/"$CONSOLE" "$HANDOFF"
 EOF
