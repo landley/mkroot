@@ -49,7 +49,7 @@ download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
 echo === Create files and directories
 
 rm -rf "$OUT" &&
-mkdir -p "$OUT"/{etc,tmp,proc,sys,dev,home,mnt,root,usr/{bin,sbin,lib}} &&
+mkdir -p "$OUT"/{etc,tmp,proc,sys,dev,home,mnt,root,usr/{bin,sbin,lib},var} &&
 chmod a+rwxt "$OUT"/tmp &&
 ln -s usr/bin "$OUT/bin" &&
 ln -s usr/sbin "$OUT/sbin" &&
@@ -211,12 +211,19 @@ CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
 make -j $CPUS PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
 ${CROSS_COMPILE}strip dropbearmulti &&
-cp dropbearmulti $OUT/bin || exit 1
+cp dropbearmulti "$OUT"/bin || exit 1
 for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
 do
   ln -s dropbearmulti $i || exit 1
 done
 cd .. && rm -rf dropbear* zlib* || exit 1
+
+
+echo === Include libc.so
+
+cp $(${CROSS_COMPILE}cc -print-file-name=libc.so) "$OUT"/usr/lib/ld-musl-sheb-nofpu-fdpic.so.1 &&
+ln -s ld-musl-sheb-nofpu-fdpic.so.1 "$OUT"/usr/lib/libc.so &&
+ln -s ../lib/ld-musl-sheb-nofpu-fdpic.so.1 "$OUT"/usr/bin/ldd
 
 echo === create out.cpio.gz
 
