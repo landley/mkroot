@@ -27,15 +27,15 @@ download()
       break
     [ $X -eq 1 ] && break
     X=1
-    rm -f "packages/$FILE"
+    rm -f packages/${FILE/-*/}-*
     wget "$2" -O "packages/$FILE"
   done
 }
 
 mkdir -p packages
 
-download 7bdf7253d5a5dbf7073e8f5ca0999a7928a63dae \
-  http://landley.net/toybox/downloads/toybox-0.6.1.tar.gz
+download 46c0918ca77127db3db196c0db446577f8247d3a \
+  http://landley.net/toybox/downloads/toybox-0.7.1.tar.gz
 
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
