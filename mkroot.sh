@@ -12,8 +12,6 @@ fi
 
 [ -z "$OUT" ] && OUT="$PWD/out"
 
-[ -z "$CPUS" ] && CPUS=$(($(nproc)+1))
-
 echo === download source
 
 download()
@@ -188,7 +186,7 @@ CONFIG_FEATURE_VI_OPTIMIZE_CURSOR=y
 EOF
 
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
-LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $CPUS &&
+LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $(nproc) &&
 cd .. && rm -rf busybox-* || exit 1
 
 echo === Native build static zlib
@@ -197,7 +195,7 @@ tar xvzf ../packages/zlib-*.tar.gz && cd zlib* &&
 # They keep checking in broken generated files.
 rm -f Makefile zconf.h &&
 CC=${CROSS_COMPILE}cc LD=${CROSS_COMPILE}ld AS=${CROSS_COMPILE}as ./configure &&
-make -j $CPUS &&
+make -j $(nproc) &&
 cd .. || exit 1
 
 echo === $HOST Native build static dropbear
@@ -209,7 +207,7 @@ ZLIB="$(echo ../zlib*)" &&
 CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
   --host=${CROSS_COMPILE%-} &&
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
-make -j $CPUS PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
+make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
 ${CROSS_COMPILE}strip dropbearmulti &&
 cp dropbearmulti "$OUT"/bin || exit 1
 for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
