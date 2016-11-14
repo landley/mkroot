@@ -221,9 +221,15 @@ cd .. && rm -rf dropbear* zlib* || exit 1
 
 echo === Include libc.so
 
-cp $(${CROSS_COMPILE}cc -print-file-name=libc.so) "$OUT"/usr/lib/ld-musl-sheb-nofpu-fdpic.so.1 &&
-ln -s ld-musl-sheb-nofpu-fdpic.so.1 "$OUT"/usr/lib/libc.so &&
-ln -s ../lib/ld-musl-sheb-nofpu-fdpic.so.1 "$OUT"/usr/bin/ldd
+echo 'int main(void) {;}' > hello.c &&
+${CROSS_COMPILE}cc hello.c || exit 1
+FROM="$(${CROSS_COMPILE}cc -print-file-name=libc.so)"
+[ -z "$FROM" ] && exit 1
+cp "$FROM" "$OUT/lib/libc.so" &&
+TO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
+[ -z "$TO" ] && exit 1
+ln -s "libc.so" "$OUT/$TO" &&
+ln -s "libc.so" "$OUT"/usr/bin/ldd
 
 echo === create out.cpio.gz
 
