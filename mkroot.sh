@@ -271,8 +271,9 @@ FROM="$(${CROSS_COMPILE}cc -print-file-name=libc.so)"
 cp "$FROM" "$OUT/lib/libc.so" &&
 TO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
 [ -z "$TO" ] && exit 1
-ln -s "libc.so" "$OUT/$TO" &&
-ln -s "libc.so" "$OUT"/usr/bin/ldd
+ln -s "/lib/libc.so" "$OUT/$TO" &&
+ln -s "/lib/libc.so" "$OUT"/usr/bin/ldd &&
+rm a.out hello.c || exit 1
 
 echo === create out.cpio.gz
 
