@@ -8,18 +8,20 @@ fi
 
 [ "$CROSS_COMPILE" == none ] && unset CROSS_COMPILE
 
-# Must be absolute path
+TOP="$PWD"
+[ -z "$OUT" ] && OUT="$TOP/out"  # Must be absolute path
+rm -rf build && mkdir -p build packages || exit 1
 
-[ -z "$OUT" ] && OUT="$PWD/out"
-
-echo === download source
-
+# Grab source package from URL, confirming SHA1 hash
 download()
 {
+  # You can stick extracted source in "packages" and build will use that instead
+  FILE="$(basename "$2")"
+  [ -d "$TOP/packages/${FILE/-*/}" ] && echo "$FILE" local && return 0
+
   X=0
   while true
   do
-    FILE="$(basename "$2")"
     [ "$(sha1sum "packages/$FILE" 2>/dev/null | awk '{print $1}')" == "$1" ] &&
       echo "$FILE" confirmed &&
       break
@@ -30,7 +32,30 @@ download()
   done
 }
 
-mkdir -p packages
+# Extract source tarball (or snapshot repo) to create disposable build dir.
+setupfor()
+{
+  PACKAGE="$1"
+  cd "$TOP/build" || exit 1
+  if [ -d "$TOP/packages/$1" ]
+  then
+    cp -la "$TOP/packages/$1" "$1" &&
+    cd "$1" || exit 1
+  else
+    tar xvaf "$TOP/packages/$1"-*.tar.* &&
+    cd "$1"-* || exit 1
+  fi
+}
+
+# Delete disposable build dir after a successful build
+cleanup()
+{
+  [ $? -ne 0 ] && exit 1
+  [ -z "$PACKAGE" ] && exit 1
+  cd .. && rm -rf "$PACKAGE"* || exit 1
+}
+
+echo === download source
 
 download 46c0918ca77127db3db196c0db446577f8247d3a \
   http://landley.net/toybox/downloads/toybox-0.7.1.tar.gz
@@ -95,22 +120,18 @@ EOF
 
 echo "nameserver 8.8.8.8" > "$OUT"/etc/resolv.conf || exit 1
 
-# Extract packages into "build" subdirectory
- 
-rm -rf build && mkdir build && cd build || exit 1
-
 echo === install toybox
 
-tar xvzf ../packages/toybox-*.tar.gz && cd toybox-* &&
+setupfor toybox
 make defconfig &&
 # Work around musl design flaw
 sed -i 's/.*\(CONFIG_TOYBOX_MUSL_NOMMU_IS_BROKEN\).*/\1=y/' .config &&
-LDFLAGS=--static PREFIX="$OUT" make toybox install &&
-cd .. && rm -rf toybox-* || exit 1
+LDFLAGS=--static PREFIX="$OUT" make toybox install
+cleanup
 
 echo === install busybox
 
-tar xvjf ../packages/busybox-*.tar.bz2 && cd busybox-* &&
+setupfor busybox
 cat > mini.conf << EOF
 CONFIG_NOMMU=y
 CONFIG_DESKTOP=y
@@ -186,21 +207,23 @@ CONFIG_FEATURE_VI_OPTIMIZE_CURSOR=y
 EOF
 
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
-LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $(nproc) &&
-cd .. && rm -rf busybox-* || exit 1
+LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $(nproc)
+cleanup
 
 echo === Native build static zlib
 
-tar xvzf ../packages/zlib-*.tar.gz && cd zlib* &&
+setupfor zlib
 # They keep checking in broken generated files.
 rm -f Makefile zconf.h &&
 CC=${CROSS_COMPILE}cc LD=${CROSS_COMPILE}ld AS=${CROSS_COMPILE}as ./configure &&
-make -j $(nproc) &&
-cd .. || exit 1
+make -j $(nproc) || exit 1
+
+# do _not_ cleanup zlib, we need the files we just built for dropbear
+cd ..
 
 echo === $HOST Native build static dropbear
 
-tar xvjf ../packages/dropbear-*.tar.bz2 && cd dropbear* &&
+setupfor dropbear
 # Repeat after me: "autoconf is useless"
 echo 'echo "$@"' > config.sub &&
 ZLIB="$(echo ../zlib*)" &&
@@ -214,8 +237,9 @@ for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
 do
   ln -s dropbearmulti $i || exit 1
 done
-cd .. && rm -rf dropbear* zlib* || exit 1
+cleanup
 
+rm -rf zlib-*
 
 echo === Include libc.so
 
