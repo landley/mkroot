@@ -19,7 +19,8 @@ fi
 
 TOP="$PWD"
 [ -z "$OUT" ] && OUT="$TOP/out"  # Must be absolute path
-rm -rf build && mkdir -p build packages || exit 1
+rm -rf out &&
+mkdir -p build packages out || exit 1
 
 # Grab source package from URL, confirming SHA1 hash
 download()
@@ -44,15 +45,16 @@ download()
 # Extract source tarball (or snapshot repo) to create disposable build dir.
 setupfor()
 {
-  PACKAGE="$1"
-  cd "$TOP/build" || exit 1
-  if [ -d "$TOP/packages/$1" ]
+  PACKAGE="$(basename "$1")"
+  cd "$TOP/build" &&
+  rm -rf "$PACKAGE" || exit 1
+  if [ -d "$TOP/packages/$PACKAGE" ]
   then
-    cp -la "$TOP/packages/$1" "$1" &&
-    cd "$1" || exit 1
+    cp -la "$TOP/packages/$PACKAGE" "$PACKAGE" &&
+    cd "$PACKAGE" || exit 1
   else
-    tar xvaf "$TOP/packages/$1"-*.tar.* &&
-    cd "$1"-* || exit 1
+    tar xvaf "$TOP/packages/$PACKAGE"-*.tar.* &&
+    cd "$PACKAGE"-* || exit 1
   fi
 }
 
@@ -72,23 +74,25 @@ download 46c0918ca77127db3db196c0db446577f8247d3a \
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
 
-download a4d316c404ff54ca545ea71a27af7dbc29817088 \
-  http://zlib.net/zlib-1.2.8.tar.gz
-
-download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
-  https://matt.ucc.asn.au/dropbear/releases/dropbear-2016.73.tar.bz2
-
 # Provide known $PATH contents for build (mostly toybox), and filter out
 # host $PATH stuff that confuses build
 
-echo === airlock
+if [ ! -e "$TOP/build/bin/toybox" ]
+then
+  echo === airlock
 
-setupfor toybox
-CROSS_COMPILE= make defconfig &&
-CROSS_COMPILE= make -j $(nproc) &&
-CROSS_COMPILE= PREFIX="$TOP/build/bin" make airlock || exit 1
+  setupfor toybox
+  CROSS_COMPILE= make defconfig &&
+  CROSS_COMPILE= make -j $(nproc) &&
+  CROSS_COMPILE= PREFIX="$TOP/build/bin" make airlock || exit 1
+  cleanup
+fi
 export PATH="$CROSS_PATH:$TOP/build/bin"
-cleanup
+
+if [ "$JUST_OVERLAY" ]
+then
+  OVERLAY="$JUST_OVERLAY"
+else
 
 echo === Create files and directories
 
@@ -231,37 +235,6 @@ make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
 LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $(nproc)
 cleanup
 
-echo === Native build static zlib
-
-setupfor zlib
-# They keep checking in broken generated files.
-rm -f Makefile zconf.h &&
-CC=${CROSS_COMPILE}cc LD=${CROSS_COMPILE}ld AS=${CROSS_COMPILE}as ./configure &&
-make -j $(nproc) || exit 1
-
-# do _not_ cleanup zlib, we need the files we just built for dropbear
-cd ..
-
-echo === $HOST Native build static dropbear
-
-setupfor dropbear
-# Repeat after me: "autoconf is useless"
-echo 'echo "$@"' > config.sub &&
-ZLIB="$(echo ../zlib*)" &&
-CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
-  --host=${CROSS_BASE%-} &&
-sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
-make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
-${CROSS_COMPILE}strip dropbearmulti &&
-cp dropbearmulti "$OUT"/bin || exit 1
-for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
-do
-  ln -s dropbearmulti $i || exit 1
-done
-cleanup
-
-rm -rf zlib-*
-
 echo === Include libc.so
 
 echo 'int main(void) {;}' > hello.c &&
@@ -274,6 +247,15 @@ TO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
 ln -s "/lib/libc.so" "$OUT/$TO" &&
 ln -s "/lib/libc.so" "$OUT"/usr/bin/ldd &&
 rm a.out hello.c || exit 1
+
+fi # JUST_OVERLAY
+
+# Build additional package(s)
+if [ ! -z "$OVERLAY" ]
+then
+  cd "$TOP" &&
+  . $OVERLAY || exit 1
+fi
 
 echo === create out.cpio.gz
 
