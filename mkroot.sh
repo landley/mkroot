@@ -4,9 +4,18 @@ if [ -z "$CROSS_COMPILE" ]
 then
   echo "Must export \$CROSS_COMPILE (set it to \"none\" for none)" >&2
   exit 1
+elif [ "$CROSS_COMPILE" == none ]
+then
+  unset CROSS_COMPILE
+else
+  CROSS_PATH="$(dirname "$(which "${CROSS_COMPILE}cc")")"
+  CROSS_BASE="$(basename "$CROSS_COMPILE")"
+  if [ -z "$CROSS_PATH" ]
+  then
+    echo "no ${CROSS_COMPILE}cc in path" >&2
+    exit 1
+  fi
 fi
-
-[ "$CROSS_COMPILE" == none ] && unset CROSS_COMPILE
 
 TOP="$PWD"
 [ -z "$OUT" ] && OUT="$TOP/out"  # Must be absolute path
@@ -68,6 +77,18 @@ download a4d316c404ff54ca545ea71a27af7dbc29817088 \
 
 download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
   https://matt.ucc.asn.au/dropbear/releases/dropbear-2016.73.tar.bz2
+
+# Provide known $PATH contents for build (mostly toybox), and filter out
+# host $PATH stuff that confuses build
+
+echo === airlock
+
+setupfor toybox
+CROSS_COMPILE= make defconfig &&
+CROSS_COMPILE= make -j $(nproc) &&
+CROSS_COMPILE= PREFIX="$TOP/build/bin" make airlock || exit 1
+export PATH="$CROSS_PATH:$TOP/build/bin"
+cleanup
 
 echo === Create files and directories
 
@@ -228,7 +249,7 @@ setupfor dropbear
 echo 'echo "$@"' > config.sub &&
 ZLIB="$(echo ../zlib*)" &&
 CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
-  --host=${CROSS_COMPILE%-} &&
+  --host=${CROSS_BASE%-} &&
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
 make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
 ${CROSS_COMPILE}strip dropbearmulti &&
