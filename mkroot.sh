@@ -2,12 +2,9 @@
 
 if [ -z "$CROSS_COMPILE" ]
 then
-  echo "Must export \$CROSS_COMPILE (set it to \"none\" for none)" >&2
-  exit 1
-elif [ "$CROSS_COMPILE" == none ]
-then
-  unset CROSS_COMPILE
+  echo "Building natively"
 else
+  echo "Cross compiling"
   CROSS_PATH="$(dirname "$(which "${CROSS_COMPILE}cc")")"
   CROSS_BASE="$(basename "$CROSS_COMPILE")"
   if [ -z "$CROSS_PATH" ]
@@ -21,6 +18,12 @@ TOP="$PWD"
 [ -z "$OUT" ] && OUT="$TOP/out"  # Must be absolute path
 rm -rf out &&
 mkdir -p build packages out || exit 1
+
+if ! cc --static -xc - <<< "int main(void) {return 0;}" -o build/hello
+then
+  echo "Your toolchain cannot compile a static hello world." >&2
+  exit 1
+fi
 
 # Grab source package from URL, confirming SHA1 hash
 download()
@@ -84,7 +87,7 @@ then
   setupfor toybox
   CROSS_COMPILE= make defconfig &&
   CROSS_COMPILE= make -j $(nproc) &&
-  CROSS_COMPILE= PREFIX="$TOP/build/bin" make airlock || exit 1
+  CROSS_COMPILE= PREFIX="$TOP/build/bin" make install_airlock || exit 1
   cleanup
 fi
 export PATH="$CROSS_PATH:$TOP/build/bin"
