@@ -1,5 +1,19 @@
 #!/bin/bash
 
+if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
+then
+  echo "usage: $0 [-nd] [OVERLAY...]"
+  echo
+  echo Create root filesystem in '$OUT'
+  echo
+  echo "-n	Don't rebuild "'$OUT, just build overlay(s)'
+  echo '-d	Install libc and dynamic linker to $OUT'
+
+  exit 1
+fi
+
+# Are we cross compiling?
+
 if [ -z "$CROSS_COMPILE" ]
 then
   echo "Building natively"
@@ -15,9 +29,9 @@ else
 fi
 
 TOP="$PWD"
-[ -z "$OUT" ] && OUT="$TOP/out"  # Must be absolute path
-rm -rf out &&
-mkdir -p build packages out || exit 1
+[ -z "$OUT" ] && OUT="$TOP/root"  # Must be absolute path
+[ "$1" == "-n" ] || rm -rf build
+mkdir -p build packages || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o build/hello
 then
@@ -92,9 +106,15 @@ then
 fi
 export PATH="$CROSS_PATH:$TOP/build/bin"
 
-if [ "$JUST_OVERLAY" ]
+# -n skips rebuilding base system, adds to existing $OUT
+if [ "$1" == "-n" ]
 then
-  OVERLAY="$JUST_OVERLAY"
+  shift
+  if [ ! -d "$OUT" ] || [ -z "$1" ]
+  then
+    echo "-n without existing $OUT or build files"
+    exit 1
+  fi
 else
 
 echo === Create files and directories
@@ -235,23 +255,37 @@ CONFIG_FEATURE_VI_OPTIMIZE_CURSOR=y
 EOF
 
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
-LDFLAGS=--static make install CONFIG_PREFIX="$OUT" -j $(nproc)
+LDFLAGS=--static make install CONFIG_PREFIX="$OUT" SKIP_STRIP=y -j $(nproc)
 cleanup
 
-echo === Include libc.so
+if [ "$1" == "-d" ]
+then
 
-echo 'int main(void) {;}' > hello.c &&
-${CROSS_COMPILE}cc hello.c || exit 1
-FROM="$(${CROSS_COMPILE}cc -print-file-name=libc.so)"
-[ -z "$FROM" ] && exit 1
-cp "$FROM" "$OUT/lib/libc.so" &&
-TO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
-[ -z "$TO" ] && exit 1
-ln -s "/lib/libc.so" "$OUT/$TO" &&
-ln -s "/lib/libc.so" "$OUT"/usr/bin/ldd &&
-rm a.out hello.c || exit 1
+  echo === Install dynamic libraries
 
-fi # JUST_OVERLAY
+  LIBLIST="c crypt dl m pthread resolv rt util"
+  # Is toolchain static only?
+  echo 'int main(void) {;}' > hello.c &&
+  ${CROSS_COMPILE}cc hello.c || exit 1
+  LDSO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
+  rm -f a.out hello.c
+  i="$(${CROSS_COMPILE}cc -print-file-name=$(basename "$LDSO"))"
+#  if [ "${i/\//}" == "$i" ]
+#  then
+#    ln -s "/lib/libc.so" "$OUT/$LDSO" "$OUT/usr/bin/ldd" || exit 1
+#  else
+#    LIBLIST="$(basname "LDSO") $LIBLIST
+#  fi
+
+  for i in $LIBLIST
+  do
+    L="$(${CROSS_COMPILE}cc -print-file-name=lib${i}.so)"
+    [ "$L" == "${L/\///}" ] && continue
+    cp "$L" "$OUT/lib/$(basename "$L")" || exit 1
+  done
+fi
+
+fi # -n
 
 # Build additional package(s)
 if [ ! -z "$OVERLAY" ]
@@ -262,6 +296,6 @@ fi
 
 echo === create out.cpio.gz
 
-(cd "$OUT" && find . | cpio -o -H newc | gzip) > out.cpio.gz
+(cd "$OUT" && find . | cpio -o -H newc | gzip) > root.cpio.gz
 
 echo === Now build kernel with CONFIG_INITRAMFS_SOURCE="\"$OUT\""
