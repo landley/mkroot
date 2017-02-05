@@ -28,10 +28,18 @@ else
   fi
 fi
 
+# Setup absolute paths (cd here to reset)
 TOP="$PWD"
-[ -z "$OUT" ] && OUT="$TOP/root"  # Must be absolute path
+[ -z "$OUT" ] && OUT="$TOP/${CROSS_BASE}root"  # Must be absolute path
+[ -z "$BUILD" ] && BUILD="$TOP/build"
+[ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
+[ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
+
+MYBUILD="$BUILD"
+[ ! -z "$CROSS_BASE" ] && MYBUILD="$BUILD/${CROSS_BASE}tmp"
+
 [ "$1" == "-n" ] || rm -rf build
-mkdir -p build packages || exit 1
+mkdir -p "$BUILD/${CROSS_BASE}tmp" "$PACKAGES" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o build/hello
 then
@@ -44,7 +52,7 @@ download()
 {
   # You can stick extracted source in "packages" and build will use that instead
   FILE="$(basename "$2")"
-  [ -d "$TOP/packages/${FILE/-*/}" ] && echo "$FILE" local && return 0
+  [ -d "$PACKAGES/${FILE/-*/}" ] && echo "$FILE" local && return 0
 
   X=0
   while true
@@ -63,14 +71,13 @@ download()
 setupfor()
 {
   PACKAGE="$(basename "$1")"
-  cd "$TOP/build" &&
-  rm -rf "$PACKAGE" || exit 1
-  if [ -d "$TOP/packages/$PACKAGE" ]
+  cd "$MYBUILD" && rm -rf "$PACKAGE" || exit 1
+  if [ -d "$PACKAGES/$PACKAGE" ]
   then
-    cp -la "$TOP/packages/$PACKAGE" "$PACKAGE" &&
+    cp -la "$PACKAGES/$PACKAGE" "$PACKAGE" &&
     cd "$PACKAGE" || exit 1
   else
-    tar xvaf "$TOP/packages/$PACKAGE"-*.tar.* &&
+    tar xvaf "$PACKAGES/$PACKAGE"-*.tar.* &&
     cd "$PACKAGE"-* || exit 1
   fi
 }
@@ -94,17 +101,17 @@ download 157d14d24748b4505b1a418535688706a2b81680 \
 # Provide known $PATH contents for build (mostly toybox), and filter out
 # host $PATH stuff that confuses build
 
-if [ ! -e "$TOP/build/bin/toybox" ]
+if [ ! -e "$AIRLOCK/toybox" ]
 then
   echo === airlock
 
-  setupfor toybox
+  MYBUILD="$BUILD" setupfor toybox
   CROSS_COMPILE= make defconfig &&
   CROSS_COMPILE= make -j $(nproc) &&
-  CROSS_COMPILE= PREFIX="$TOP/build/bin" make install_airlock || exit 1
+  CROSS_COMPILE= PREFIX="$AIRLOCK" make install_airlock || exit 1
   cleanup
 fi
-export PATH="$CROSS_PATH:$TOP/build/bin"
+export PATH="$CROSS_PATH:$AIRLOCK"
 
 # -n skips rebuilding base system, adds to existing $OUT
 if [ "$1" == "-n" ]
@@ -127,7 +134,7 @@ ln -s usr/sbin "$OUT/sbin" &&
 ln -s usr/lib "$OUT/lib" &&
 
 cat > "$OUT"/init << 'EOF' &&
-#!/bin/hush
+#!/bin/sh
 
 export HOME=/home
 export PATH=/bin:/sbin
@@ -150,7 +157,7 @@ route add default gw 10.0.2.2
 [ -z "$CONSOLE" ] &&
   CONSOLE="$(sed -n 's@.* console=\(/dev/\)*\([^ ]*\).*@\2@p' /proc/cmdline)"
 
-[ -z "$HANDOFF" ] && HANDOFF=/bin/hush && echo Type exit when done.
+[ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo Type exit when done.
 [ -z "$CONSOLE" ] && CONSOLE=console
 exec /sbin/oneit -c /dev/"$CONSOLE" "$HANDOFF"
 EOF
@@ -294,8 +301,9 @@ then
   . $OVERLAY || exit 1
 fi
 
-echo === create out.cpio.gz
+echo === create "${CROSS_BASE}root.cpio.gz"
 
-(cd "$OUT" && find . | cpio -o -H newc | gzip) > root.cpio.gz
+(cd "$OUT" && find . | cpio -o -H newc | gzip) > \
+  "$OUT/../${CROSS_BASE}root.cpio.gz"
 
 echo === Now build kernel with CONFIG_INITRAMFS_SOURCE="\"$OUT\""
