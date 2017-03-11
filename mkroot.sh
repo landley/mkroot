@@ -92,8 +92,8 @@ cleanup()
 
 echo === download source
 
-download 46c0918ca77127db3db196c0db446577f8247d3a \
-  http://landley.net/toybox/downloads/toybox-0.7.1.tar.gz
+download f3d9f5396a210fb2ad7d6309acb237751c50812f \
+  http://landley.net/toybox/downloads/toybox-0.7.3.tar.gz
 
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
