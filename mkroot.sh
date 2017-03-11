@@ -178,9 +178,12 @@ echo "nameserver 8.8.8.8" > "$OUT"/etc/resolv.conf || exit 1
 echo === install toybox
 
 setupfor toybox
-make defconfig &&
-# Work around musl design flaw
-sed -i 's/.*\(CONFIG_TOYBOX_MUSL_NOMMU_IS_BROKEN\).*/\1=y/' .config &&
+make defconfig || exit 1
+# Work around musl-libc design flaw
+if [ "${CROSS_BASE/fdpic//}" != "$CROSS_BASE" ]
+then
+  sed -i 's/.*\(CONFIG_TOYBOX_MUSL_NOMMU_IS_BROKEN\).*/\1=y/' .config || exit 1
+fi
 LDFLAGS=--static PREFIX="$OUT" make toybox install
 cleanup
 
