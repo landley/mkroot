@@ -30,18 +30,19 @@ fi
 
 # Setup absolute paths (cd here to reset)
 TOP="$PWD"
-[ -z "$OUT" ] && OUT="$TOP/${CROSS_BASE}root"  # Must be absolute path
 [ -z "$BUILD" ] && BUILD="$TOP/build"
+[ -z "$OUTPUT" ] && OUTPUT="$TOP/output"
+[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root"
 [ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
 MYBUILD="$BUILD"
 [ ! -z "$CROSS_BASE" ] && MYBUILD="$BUILD/${CROSS_BASE}tmp"
 
-[ "$1" == "-n" ] || rm -rf build
-mkdir -p "$BUILD/${CROSS_BASE}tmp" "$PACKAGES" || exit 1
+[ "$1" == "-n" ] || rm -rf "$OUT"
+mkdir -p "$MYBUILD" "$PACKAGES" || exit 1
 
-if ! cc --static -xc - <<< "int main(void) {return 0;}" -o build/hello
+if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
 then
   echo "Your toolchain cannot compile a static hello world." >&2
   exit 1
@@ -307,6 +308,6 @@ fi
 echo === create "${CROSS_BASE}root.cpio.gz"
 
 (cd "$OUT" && find . | cpio -o -H newc | gzip) > \
-  "$OUT/../${CROSS_BASE}root.cpio.gz"
+  "$OUTPUT/${CROSS_BASE}root.cpio.gz"
 
 echo === Now build kernel with CONFIG_INITRAMFS_SOURCE="\"$OUT\""
