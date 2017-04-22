@@ -21,6 +21,7 @@ else
   echo "Cross compiling"
   CROSS_PATH="$(dirname "$(which "${CROSS_COMPILE}cc")")"
   CROSS_BASE="$(basename "$CROSS_COMPILE")"
+  CROSS_SHORT="${CROSS_BASE/-*/}"
   if [ -z "$CROSS_PATH" ]
   then
     echo "no ${CROSS_COMPILE}cc in path" >&2
@@ -32,7 +33,7 @@ fi
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output"
-[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root"
+[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root/$CROSS_SHORT"
 [ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
@@ -44,7 +45,7 @@ mkdir -p "$MYBUILD" "$PACKAGES" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
 then
-  echo "Your toolchain cannot compile a static hello world." >&2
+  echo "This compiler can't create a static binary." >&2
   exit 1
 fi
 
@@ -61,9 +62,9 @@ download()
     [ "$(sha1sum "packages/$FILE" 2>/dev/null | awk '{print $1}')" == "$1" ] &&
       echo "$FILE" confirmed &&
       break
+    rm -f packages/${FILE/-*/}-*
     [ $X -eq 1 ] && break
     X=1
-    rm -f packages/${FILE/-*/}-*
     wget "$2" -O "packages/$FILE"
   done
 }
@@ -299,11 +300,12 @@ fi
 fi # -n
 
 # Build additional package(s)
-if [ ! -z "$OVERLAY" ]
-then
+while [ $# -gt 0 ]
+do
   cd "$TOP" &&
-  . $OVERLAY || exit 1
-fi
+  . "$1" || exit 1
+  shift
+done
 
 echo === create "${CROSS_BASE}root.cpio.gz"
 
