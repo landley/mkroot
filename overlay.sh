@@ -1,11 +1,11 @@
-#!/bin/echo Use "OVERLAY=overlay.sh ./mkroot.sh"
+#!/bin/echo Use "./mkroot.sh dropbear"
 
 # Example overlay file, adding dropbear (which requires zlib)
 
 echo === download source
 
 download a4d316c404ff54ca545ea71a27af7dbc29817088 \
-  http://zlib.net/zlib-1.2.8.tar.gz
+  http://downloads.sf.net/libpng/zlib-1.2.8.tar.gz
 
 download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
   https://matt.ucc.asn.au/dropbear/releases/dropbear-2016.73.tar.bz2
