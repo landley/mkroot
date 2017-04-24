@@ -5,17 +5,30 @@ download f3a20cbd8c140acbbba76eb6ca1f56a8812c321f \
 
 [ -z "$HOST" ] && HOST="${CROSS_BASE/-*/}"
 
-if [ "$HOST" == x86_64 ]
+# Target-specific info in an if/else staircase
+
+if [ "$HOST" == powerpc ]
 then
-  QEMU=qemu-system-x86_64
-  KARCH=x86
+  QEMU="qemu-system-ppc -M g3beige"
+  KARCH=powerpc
   KARGS="console=ttyS0"
-  VMLINUX=arch/x86/boot/bzImage
+  VMLINUX=vmlinux
   KERNEL_CONFIG="
-CONFIG_64BIT=y
-CONFIG_ACPI=y
-CONFIG_SERIAL_8250=y
-CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_ALTIVEC=y
+CONFIG_PPC_PMAC=y
+CONFIG_PPC_OF_BOOT_TRAMPOLINE=y
+CONFIG_PPC601_SYNC_FIX=y
+CONFIG_BLK_DEV_IDE_PMAC=y
+CONFIG_BLK_DEV_IDE_PMAC_ATA100FIRST=y
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_ADB=y
+CONFIG_ADB_CUDA=y
+CONFIG_NE2K_PCI=y
+CONFIG_SERIO=y
+CONFIG_SERIAL_PMACZILOG=y
+CONFIG_SERIAL_PMACZILOG_TTYS=y
+CONFIG_SERIAL_PMACZILOG_CONSOLE=y
+CONFIG_BOOTX_TEXT=y
 "
 elif [ "$HOST" == sh4 ]
 then
@@ -34,16 +47,28 @@ CONFIG_RTS7751R2D_PLUS=y
 CONFIG_SERIAL_SH_SCI=y
 CONFIG_SERIAL_SH_SCI_CONSOLE=y
 "
+elif [ "$HOST" == x86_64 ]
+then
+  QEMU=qemu-system-x86_64
+  KARCH=x86
+  KARGS="console=ttyS0"
+  VMLINUX=arch/x86/boot/bzImage
+  KERNEL_CONFIG="
+CONFIG_64BIT=y
+CONFIG_ACPI=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+"
 else
   echo "Unknown \$HOST"
   exit 1
 fi
 
-# Collate arch-specific and generic parts of miniconfig
-getconfig()
+# Add generic info to arch-specific part of miniconfig
+getminiconfig()
 {
   echo "$KERNEL_CONFIG"
-  cat << EOF
+  echo "
 # CONFIG_EMBEDDED is not set
 CONFIG_EARLY_PRINTK=y
 CONFIG_BLK_DEV_INITRD=y"
@@ -52,15 +77,18 @@ CONFIG_BINFMT_ELF=y
 CONFIG_BINFMT_SCRIPT=y
 CONFIG_MISC_FILESYSTEMS=y
 CONFIG_DEVTMPFS=y
-EOF
+"
 }
 
+# Build kernel
+
 setupfor linux
-make allnoconfig ARCH=$KARCH KCONFIG_ALLCONFIG=<(getconfig) &&
+make allnoconfig ARCH=$KARCH KCONFIG_ALLCONFIG=<(getminiconfig) &&
 make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) &&
 cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")" &&
 echo "$QEMU -nographic -no-reboot -append \"panic=1 HOST=$HOST $KARGS\""\
      "-kernel $(basename "$VMLINUX") -initrd $HOST-linux-musl-root.cpio.gz" \
-     > "$OUTPUT"/qemu-$HOST.sh
+     > "$OUTPUT/qemu-$HOST.sh" &&
+chmod _+x "$OUTPUT/qemu-$HOST.sh"
 cleanup
 
