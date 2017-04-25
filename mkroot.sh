@@ -32,8 +32,8 @@ fi
 # Setup absolute paths (cd here to reset)
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
-[ -z "$OUTPUT" ] && OUTPUT="$TOP/output"
-[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root/$CROSS_SHORT"
+[ -z "$OUTPUT" ] && OUTPUT="$TOP/output/$CROSS_SHORT"
+[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root"
 [ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
