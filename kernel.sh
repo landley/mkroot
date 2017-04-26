@@ -3,11 +3,27 @@
 download f3a20cbd8c140acbbba76eb6ca1f56a8812c321f \
   https://kernel.org/pub/linux/kernel/v4.x/linux-4.10.tar.gz
 
-[ -z "$HOST" ] && HOST="${CROSS_BASE/-*/}"
+[ -z "$TARGET" ] && TARGET="${CROSS_BASE/-*/}"
+
+# Add generic info to arch-specific part of miniconfig
+getminiconfig()
+{
+  echo "$KERNEL_CONFIG"
+  echo "
+# CONFIG_EMBEDDED is not set
+CONFIG_EARLY_PRINTK=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_RD_GZIP=y
+CONFIG_BINFMT_ELF=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_MISC_FILESYSTEMS=y
+CONFIG_DEVTMPFS=y
+"
+}
 
 # Target-specific info in an if/else staircase
 
-if [ "$HOST" == aarch64 ]
+if [ "$TARGET" == aarch64 ]
 then
   QEMU="qemu-system-aarch64 -M virt -cpu cortex-a57"
   KARCH=arm64
@@ -21,7 +37,39 @@ CONFIG_RTC_CLASS=y
 CONFIG_RTC_HCTOSYS=y
 CONFIG_RTC_DRV_PL031=y
 "
-elif [ "$HOST" == powerpc ]
+elif [ "$TARGET" == armv5l ]
+then
+  QEMU="qemu-system-arm -M versatilepb -net nic,model=rtl8139 -net user"
+  KARCH=arm
+  KARGS="console=ttyAMA0"
+  VMLINUX=arch/arm/boot/zImage
+  KERNEL_CONFIG="
+CONFIG_CPU_ARM926T=y
+CONFIG_MMU=y
+CONFIG_VFP=y
+CONFIG_ARM_THUMB=y
+CONFIG_AEABI=y
+
+CONFIG_ARCH_VERSATILE=y
+#CONFIG_PCI_LEGACY=y
+#CONFIG_SERIAL_NONSTANDARD=y
+CONFIG_SERIAL_AMBA_PL011=y
+CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+#CONFIG_RTC_CLASS=y
+#CONFIG_RTC_DRV_PL031=y
+#CONFIG_SCSI_SYM53C8XX_2=y
+#CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=0
+#CONFIG_SCSI_SYM53C8XX_MMIO=y
+
+# The switch to device-tree-only added this mess
+CONFIG_ATAGS=y
+CONFIG_DEPRECATED_PARAM_STRUCT=y
+CONFIG_ARM_APPENDED_DTB=y
+CONFIG_ARM_ATAG_DTB_COMPAT=y
+CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND=y
+"
+  RUN_AFTER="cat arch/arm/boot/dts/versatile-pb.dtb >> $VMLINUX"
+elif [ "$TARGET" == powerpc ]
 then
   QEMU="qemu-system-ppc -M g3beige"
   KARCH=powerpc
@@ -44,7 +92,7 @@ CONFIG_SERIAL_PMACZILOG_TTYS=y
 CONFIG_SERIAL_PMACZILOG_CONSOLE=y
 CONFIG_BOOTX_TEXT=y
 "
-elif [ "$HOST" == sh4 ]
+elif [ "$TARGET" == sh4 ]
 then
   QEMU="qemu-system-sh4 -M r2d -monitor null -serial null -serial stdio"
   KARCH=sh
@@ -61,7 +109,7 @@ CONFIG_RTS7751R2D_PLUS=y
 CONFIG_SERIAL_SH_SCI=y
 CONFIG_SERIAL_SH_SCI_CONSOLE=y
 "
-elif [ "$HOST" == x86_64 ]
+elif [ "$TARGET" == x86_64 ]
 then
   QEMU=qemu-system-x86_64
   KARCH=x86
@@ -74,35 +122,26 @@ CONFIG_SERIAL_8250=y
 CONFIG_SERIAL_8250_CONSOLE=y
 "
 else
-  echo "Unknown \$HOST"
+  echo "Unknown \$TARGET"
   exit 1
 fi
-
-# Add generic info to arch-specific part of miniconfig
-getminiconfig()
-{
-  echo "$KERNEL_CONFIG"
-  echo "
-# CONFIG_EMBEDDED is not set
-CONFIG_EARLY_PRINTK=y
-CONFIG_BLK_DEV_INITRD=y
-CONFIG_RD_GZIP=y
-CONFIG_BINFMT_ELF=y
-CONFIG_BINFMT_SCRIPT=y
-CONFIG_MISC_FILESYSTEMS=y
-CONFIG_DEVTMPFS=y
-"
-}
 
 # Build kernel
 
 setupfor linux
-make allnoconfig ARCH=$KARCH KCONFIG_ALLCONFIG=<(getminiconfig) &&
-make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) &&
+make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG=<(getminiconfig) &&
+make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) || exit 1
+
+if [ ! -z "$RUN_AFTER" ]
+then
+  eval "$RUN_AFTER" || exit 1
+fi
+
 cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")" &&
-echo "$QEMU -nographic -no-reboot -m 256 -append \"panic=1 HOST=$HOST $KARGS\""\
+echo "$QEMU -nographic -no-reboot -m 256" \
+     "-append \"panic=1 HOST=$TARGET $KARGS\"" \
      "-kernel $(basename "$VMLINUX") -initrd ${CROSS_BASE}root.cpio.gz" \
-     > "$OUTPUT/qemu-$HOST.sh" &&
-chmod +x "$OUTPUT/qemu-$HOST.sh"
+     > "$OUTPUT/qemu-$TARGET.sh" &&
+chmod +x "$OUTPUT/qemu-$TARGET.sh"
 cleanup
 
