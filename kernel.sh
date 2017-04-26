@@ -71,7 +71,7 @@ getminiconfig()
   echo "
 # CONFIG_EMBEDDED is not set
 CONFIG_EARLY_PRINTK=y
-CONFIG_BLK_DEV_INITRD=y"
+CONFIG_BLK_DEV_INITRD=y
 CONFIG_RD_GZIP=y
 CONFIG_BINFMT_ELF=y
 CONFIG_BINFMT_SCRIPT=y
@@ -86,9 +86,9 @@ setupfor linux
 make allnoconfig ARCH=$KARCH KCONFIG_ALLCONFIG=<(getminiconfig) &&
 make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) &&
 cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")" &&
-echo "$QEMU -nographic -no-reboot -append \"panic=1 HOST=$HOST $KARGS\""\
-     "-kernel $(basename "$VMLINUX") -initrd $HOST-linux-musl-root.cpio.gz" \
+echo "$QEMU -nographic -no-reboot -m 256 -append \"panic=1 HOST=$HOST $KARGS\""\
+     "-kernel $(basename "$VMLINUX") -initrd ${CROSS_BASE}root.cpio.gz" \
      > "$OUTPUT/qemu-$HOST.sh" &&
-chmod _+x "$OUTPUT/qemu-$HOST.sh"
+chmod +x "$OUTPUT/qemu-$HOST.sh"
 cleanup
 
