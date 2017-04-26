@@ -7,7 +7,21 @@ download f3a20cbd8c140acbbba76eb6ca1f56a8812c321f \
 
 # Target-specific info in an if/else staircase
 
-if [ "$HOST" == powerpc ]
+if [ "$HOST" == aarch64 ]
+then
+  QEMU="qemu-system-aarch64 -M virt -cpu cortex-a57"
+  KARCH=arm64
+  KARGS="console=ttyAMA0"
+  VMLINUX=arch/arm64/boot/Image
+  KERNEL_CONFIG="
+CONFIG_SERIAL_OF_PLATFORM=y
+CONFIG_SERIAL_AMBA_PL011=y
+CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_DRV_PL031=y
+"
+elif [ "$HOST" == powerpc ]
 then
   QEMU="qemu-system-ppc -M g3beige"
   KARCH=powerpc
