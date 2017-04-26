@@ -33,14 +33,14 @@ fi
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/$CROSS_SHORT"
-[ -z "$OUT" ] && OUT="$OUTPUT/${CROSS_BASE}root"
+[ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
 [ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
 MYBUILD="$BUILD"
 [ ! -z "$CROSS_BASE" ] && MYBUILD="$BUILD/${CROSS_BASE}tmp"
 
-[ "$1" == "-n" ] || rm -rf "$OUT"
+[ "$1" == "-n" ] || rm -rf "$ROOT"
 mkdir -p "$MYBUILD" "$PACKAGES" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
@@ -115,27 +115,27 @@ then
 fi
 export PATH="$CROSS_PATH:$AIRLOCK"
 
-# -n skips rebuilding base system, adds to existing $OUT
+# -n skips rebuilding base system, adds to existing $ROOT
 if [ "$1" == "-n" ]
 then
   shift
-  if [ ! -d "$OUT" ] || [ -z "$1" ]
+  if [ ! -d "$ROOT" ] || [ -z "$1" ]
   then
-    echo "-n without existing $OUT or build files"
+    echo "-n without existing $ROOT or build files"
     exit 1
   fi
 else
 
 echo === Create files and directories
 
-rm -rf "$OUT" &&
-mkdir -p "$OUT"/{etc,tmp,proc,sys,dev,home,mnt,root,usr/{bin,sbin,lib},var} &&
-chmod a+rwxt "$OUT"/tmp &&
-ln -s usr/bin "$OUT/bin" &&
-ln -s usr/sbin "$OUT/sbin" &&
-ln -s usr/lib "$OUT/lib" &&
+rm -rf "$ROOT" &&
+mkdir -p "$ROOT"/{etc,tmp,proc,sys,dev,home,mnt,root,usr/{bin,sbin,lib},var} &&
+chmod a+rwxt "$ROOT"/tmp &&
+ln -s usr/bin "$ROOT/bin" &&
+ln -s usr/sbin "$ROOT/sbin" &&
+ln -s usr/lib "$ROOT/lib" &&
 
-cat > "$OUT"/init << 'EOF' &&
+cat > "$ROOT"/init << 'EOF' &&
 #!/bin/sh
 
 export HOME=/home
@@ -163,19 +163,19 @@ route add default gw 10.0.2.2
 [ -z "$CONSOLE" ] && CONSOLE=console
 exec /sbin/oneit -c /dev/"$CONSOLE" "$HANDOFF"
 EOF
-chmod +x "$OUT"/init &&
+chmod +x "$ROOT"/init &&
 
-cat > "$OUT"/etc/passwd << 'EOF' &&
+cat > "$ROOT"/etc/passwd << 'EOF' &&
 root::0:0:root:/home/root:/bin/sh
 guest:x:500:500:guest:/home/guest:/bin/sh
 EOF
 
-cat > "$OUT"/etc/group << 'EOF' &&
+cat > "$ROOT"/etc/group << 'EOF' &&
 root:x:0:
 guest:x:500:
 EOF
 
-echo "nameserver 8.8.8.8" > "$OUT"/etc/resolv.conf || exit 1
+echo "nameserver 8.8.8.8" > "$ROOT"/etc/resolv.conf || exit 1
 
 echo === install toybox
 
@@ -186,7 +186,7 @@ if [ "${CROSS_BASE/fdpic//}" != "$CROSS_BASE" ]
 then
   sed -i 's/.*\(CONFIG_TOYBOX_MUSL_NOMMU_IS_BROKEN\).*/\1=y/' .config || exit 1
 fi
-LDFLAGS=--static PREFIX="$OUT" make toybox install
+LDFLAGS=--static PREFIX="$ROOT" make toybox install
 cleanup
 
 echo === install busybox
@@ -267,7 +267,7 @@ CONFIG_FEATURE_VI_OPTIMIZE_CURSOR=y
 EOF
 
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
-LDFLAGS=--static make install CONFIG_PREFIX="$OUT" SKIP_STRIP=y -j $(nproc)
+LDFLAGS=--static make install CONFIG_PREFIX="$ROOT" SKIP_STRIP=y -j $(nproc)
 cleanup
 
 if [ "$1" == "-d" ]
@@ -284,7 +284,7 @@ then
   i="$(${CROSS_COMPILE}cc -print-file-name=$(basename "$LDSO"))"
 #  if [ "${i/\//}" == "$i" ]
 #  then
-#    ln -s "/lib/libc.so" "$OUT/$LDSO" "$OUT/usr/bin/ldd" || exit 1
+#    ln -s "/lib/libc.so" "$ROOT/$LDSO" "$ROOT/usr/bin/ldd" || exit 1
 #  else
 #    LIBLIST="$(basname "LDSO") $LIBLIST
 #  fi
@@ -293,7 +293,7 @@ then
   do
     L="$(${CROSS_COMPILE}cc -print-file-name=lib${i}.so)"
     [ "$L" == "${L/\///}" ] && continue
-    cp "$L" "$OUT/lib/$(basename "$L")" || exit 1
+    cp "$L" "$ROOT/lib/$(basename "$L")" || exit 1
   done
 fi
 
@@ -309,7 +309,5 @@ done
 
 echo === create "${CROSS_BASE}root.cpio.gz"
 
-(cd "$OUT" && find . | cpio -o -H newc | gzip) > \
+(cd "$ROOT" && find . | cpio -o -H newc | gzip) > \
   "$OUTPUT/${CROSS_BASE}root.cpio.gz"
-
-echo === Now build kernel with CONFIG_INITRAMFS_SOURCE="\"$OUT\""
