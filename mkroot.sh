@@ -2,12 +2,12 @@
 
 if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
 then
-  echo "usage: $0 [-nd] [OVERLAY...]"
+  echo "usage: $0 [-nd] [MODULE...]"
   echo
-  echo Create root filesystem in '$OUT'
+  echo Create root filesystem in '$ROOT'
   echo
-  echo "-n	Don't rebuild "'$OUT, just build overlay(s)'
-  echo '-d	Install libc and dynamic linker to $OUT'
+  echo "-n	Don't rebuild "'$ROOT, just build module(s)'
+  echo '-d	Install libc and dynamic linker to $ROOT'
 
   exit 1
 fi
@@ -299,11 +299,11 @@ fi
 
 fi # -n
 
-# Build additional package(s)
+# Build overlays(s)
 while [ $# -gt 0 ]
 do
   cd "$TOP" &&
-  . "$1" || exit 1
+  . module/"$(basename "$1")" || exit 1
   shift
 done
 

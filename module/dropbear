@@ -32,9 +32,9 @@ CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
 make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
 ${CROSS_COMPILE}strip dropbearmulti &&
-mkdir -p "$OUT/bin" &&
-cp dropbearmulti "$OUT"/bin || exit 1
-for i in "$OUT"/bin/{ssh,sshd,scp,dropbearkey}
+mkdir -p "$ROOT/bin" &&
+cp dropbearmulti "$ROOT"/bin || exit 1
+for i in "$ROOT"/bin/{ssh,sshd,scp,dropbearkey}
 do
   ln -s dropbearmulti $i || exit 1
 done
