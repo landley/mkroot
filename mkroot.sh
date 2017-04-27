@@ -34,14 +34,14 @@ TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/$CROSS_SHORT"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
-[ -z "$PACKAGES" ] && PACKAGES="$TOP/packages"
+[ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
 MYBUILD="$BUILD"
 [ ! -z "$CROSS_BASE" ] && MYBUILD="$BUILD/${CROSS_BASE}tmp"
 
 [ "$1" == "-n" ] || rm -rf "$ROOT"
-mkdir -p "$MYBUILD" "$PACKAGES" || exit 1
+mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
 then
@@ -52,20 +52,20 @@ fi
 # Grab source package from URL, confirming SHA1 hash
 download()
 {
-  # You can stick extracted source in "packages" and build will use that instead
+  # You can stick extracted source in $DOWNLOAD and build will use that instead
   FILE="$(basename "$2")"
-  [ -d "$PACKAGES/${FILE/-*/}" ] && echo "$FILE" local && return 0
+  [ -d "$DOWNLOAD/${FILE/-*/}" ] && echo "$FILE" local && return 0
 
   X=0
   while true
   do
-    [ "$(sha1sum "packages/$FILE" 2>/dev/null | awk '{print $1}')" == "$1" ] &&
+    [ "$(sha1sum "$DOWNLOAD/$FILE" 2>/dev/null | awk '{print $1}')" == "$1" ] &&
       echo "$FILE" confirmed &&
       break
-    rm -f packages/${FILE/-*/}-*
+    rm -f $DOWNLOAD/${FILE/-*/}-*
     [ $X -eq 1 ] && break
     X=1
-    wget "$2" -O "packages/$FILE"
+    wget "$2" -O "$DOWNLOAD/$FILE"
   done
 }
 
@@ -74,12 +74,12 @@ setupfor()
 {
   PACKAGE="$(basename "$1")"
   cd "$MYBUILD" && rm -rf "$PACKAGE" || exit 1
-  if [ -d "$PACKAGES/$PACKAGE" ]
+  if [ -d "$DOWNLOAD/$PACKAGE" ]
   then
-    cp -la "$PACKAGES/$PACKAGE" "$PACKAGE" &&
+    cp -la "$DOWNLOAD/$PACKAGE" "$PACKAGE" &&
     cd "$PACKAGE" || exit 1
   else
-    tar xvaf "$PACKAGES/$PACKAGE"-*.tar.* &&
+    tar xvaf "$DOWNLOAD/$PACKAGE"-*.tar.* &&
     cd "$PACKAGE"-* || exit 1
   fi
 }
@@ -121,7 +121,7 @@ then
   shift
   if [ ! -d "$ROOT" ] || [ -z "$1" ]
   then
-    echo "-n without existing $ROOT or build files"
+    echo "-n needs an existing $ROOT and build files"
     exit 1
   fi
 else
