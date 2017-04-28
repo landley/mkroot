@@ -7,7 +7,6 @@ then
   echo Create root filesystem in '$ROOT'
   echo
   echo "-n	Don't rebuild "'$ROOT, just build module(s)'
-  echo '-d	Install libc and dynamic linker to $ROOT'
 
   exit 1
 fi
@@ -271,33 +270,6 @@ EOF
 make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
 LDFLAGS=--static make install CONFIG_PREFIX="$ROOT" SKIP_STRIP=y -j $(nproc)
 cleanup
-
-if [ "$1" == "-d" ]
-then
-
-  echo === Install dynamic libraries
-
-  LIBLIST="c crypt dl m pthread resolv rt util"
-  # Is toolchain static only?
-  echo 'int main(void) {;}' > hello.c &&
-  ${CROSS_COMPILE}cc hello.c || exit 1
-  LDSO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
-  rm -f a.out hello.c
-  i="$(${CROSS_COMPILE}cc -print-file-name=$(basename "$LDSO"))"
-#  if [ "${i/\//}" == "$i" ]
-#  then
-#    ln -s "/lib/libc.so" "$ROOT/$LDSO" "$ROOT/usr/bin/ldd" || exit 1
-#  else
-#    LIBLIST="$(basname "LDSO") $LIBLIST
-#  fi
-
-  for i in $LIBLIST
-  do
-    L="$(${CROSS_COMPILE}cc -print-file-name=lib${i}.so)"
-    [ "$L" == "${L/\///}" ] && continue
-    cp "$L" "$ROOT/lib/$(basename "$L")" || exit 1
-  done
-fi
 
 fi # -n
 

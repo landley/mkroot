@@ -1,0 +1,24 @@
+#!/bin/echo Use as an argument to mkroot.sh
+
+echo === Install dynamic libraries
+
+LIBLIST="c crypt dl m pthread resolv rt util"
+# Is toolchain static only?
+echo 'int main(void) {;}' > hello.c &&
+${CROSS_COMPILE}cc hello.c || exit 1
+LDSO=$(toybox file a.out | sed 's/.* dynamic [(]\([^)]*\).*/\1/')
+rm -f a.out hello.c
+i="$(${CROSS_COMPILE}cc -print-file-name=$(basename "$LDSO"))"
+#  if [ "${i/\//}" == "$i" ]
+#  then
+#    ln -s "/lib/libc.so" "$ROOT/$LDSO" "$ROOT/usr/bin/ldd" || exit 1
+#  else
+#    LIBLIST="$(basname "LDSO") $LIBLIST
+#  fi
+
+for i in $LIBLIST
+do
+  L="$(${CROSS_COMPILE}cc -print-file-name=lib${i}.so)"
+  [ "$L" == "${L/\///}" ] && continue
+  cp "$L" "$ROOT/lib/$(basename "$L")" || exit 1
+done
