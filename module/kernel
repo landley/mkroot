@@ -70,6 +70,25 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
 CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND=y
 "
   DTB=arch/arm/boot/dts/versatile-pb.dtb
+elif [ "$TARGET" == mips ] || [ "$TARGET" == mipsel ]
+then
+  QEMU="qemu-system-mips -M malta"
+  KARCH=mips
+  KARGS="console=ttyS0"
+  VMLINUX=vmlinux
+  KERNEL_CONFIG="
+CONFIG_MIPS_MALTA=y
+CONFIG_CPU_MIPS32_R2=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_PCNET32=y
+CONFIG_BLK_DEV_PIIX=y
+CONFIG_POWER_RESET=y
+CONFIG_POWER_RESET_SYSCON=y
+"
+  [ "$TARGET" == mipsel ] &&
+    KERNEL_CONFIG="${KERNEL_CONFIG}CONFIG_CPU_LITTLE_ENDIAN=y" &&
+    QEMU="qemu-system-mipsel -M malta"
 elif [ "$TARGET" == powerpc ]
 then
   QEMU="qemu-system-ppc -M g3beige"
