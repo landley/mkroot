@@ -73,6 +73,8 @@ download()
 setupfor()
 {
   PACKAGE="$(basename "$1")"
+  echo === "$PACKAGE"
+  tty -s && echo -en "\033]2;$CROSS_SHORT $STAGE_NAME $1\007"
   cd "$MYBUILD" && rm -rf "$PACKAGE" || exit 1
   if [ -d "$DOWNLOAD/$PACKAGE" ]
   then
@@ -177,7 +179,7 @@ EOF
 
 echo "nameserver 8.8.8.8" > "$ROOT"/etc/resolv.conf || exit 1
 
-echo === install toybox
+# toybox
 
 setupfor toybox
 make defconfig || exit 1
@@ -189,7 +191,7 @@ fi
 LDFLAGS=--static PREFIX="$ROOT" make toybox install
 cleanup
 
-echo === install busybox
+# todo: eliminate busybox
 
 setupfor busybox
 cat > mini.conf << EOF
@@ -303,7 +305,8 @@ fi # -n
 while [ $# -gt 0 ]
 do
   cd "$TOP" &&
-  . module/"$(basename "$1")" || exit 1
+  STAGE_NAME="$(basename "$1")" &&
+  . module/"$STAGE_NAME" || exit 1
   shift
 done
 
