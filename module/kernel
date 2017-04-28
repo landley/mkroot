@@ -21,6 +21,8 @@ CONFIG_DEVTMPFS=y
 "
 }
 
+# Each target needs board, serial console, RTC, ethernet, block device.
+
 # Target-specific info in an if/else staircase
 
 if [ "$TARGET" == aarch64 ]
@@ -52,11 +54,11 @@ CONFIG_AEABI=y
 
 CONFIG_ARCH_VERSATILE=y
 #CONFIG_PCI_LEGACY=y
-#CONFIG_SERIAL_NONSTANDARD=y
 CONFIG_SERIAL_AMBA_PL011=y
 CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-#CONFIG_RTC_CLASS=y
-#CONFIG_RTC_DRV_PL031=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_DRV_PL031=y
+CONFIG_RTC_HCTOSYS=y
 #CONFIG_SCSI_SYM53C8XX_2=y
 #CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=0
 #CONFIG_SCSI_SYM53C8XX_MMIO=y
@@ -64,11 +66,10 @@ CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
 # The switch to device-tree-only added this mess
 CONFIG_ATAGS=y
 CONFIG_DEPRECATED_PARAM_STRUCT=y
-CONFIG_ARM_APPENDED_DTB=y
 CONFIG_ARM_ATAG_DTB_COMPAT=y
 CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND=y
 "
-  RUN_AFTER="cat arch/arm/boot/dts/versatile-pb.dtb >> $VMLINUX"
+  DTB=arch/arm/boot/dts/versatile-pb.dtb
 elif [ "$TARGET" == powerpc ]
 then
   QEMU="qemu-system-ppc -M g3beige"
@@ -129,18 +130,20 @@ fi
 # Build kernel
 
 setupfor linux
-make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG=<(getminiconfig) &&
+getminiconfig > "$OUTPUT/$TARGET.miniconf" &&
+make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG="$OUTPUT/$TARGET.miniconf" &&
 make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) || exit 1
 
-if [ ! -z "$RUN_AFTER" ]
+if [ ! -z "$DTB" ]
 then
-  eval "$RUN_AFTER" || exit 1
+  cp "$DTB" "$OUTPUT/$(basename "$DTB")" || exit 1
 fi
 
 cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")" &&
 echo "$QEMU -nographic -no-reboot -m 256" \
      "-append \"panic=1 HOST=$TARGET $KARGS\"" \
      "-kernel $(basename "$VMLINUX") -initrd ${CROSS_BASE}root.cpio.gz" \
+     ${DTB:+-dtb "$(basename "$DTB")"} \
      > "$OUTPUT/qemu-$TARGET.sh" &&
 chmod +x "$OUTPUT/qemu-$TARGET.sh"
 cleanup
