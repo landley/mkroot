@@ -31,13 +31,12 @@ fi
 # Setup absolute paths (cd here to reset)
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
-[ -z "$OUTPUT" ] && OUTPUT="$TOP/output/$CROSS_SHORT"
+[ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
 [ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
-MYBUILD="$BUILD"
-[ ! -z "$CROSS_BASE" ] && MYBUILD="$BUILD/${CROSS_BASE}tmp"
+MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
 
 [ "$1" == "-n" ] || rm -rf "$ROOT"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
