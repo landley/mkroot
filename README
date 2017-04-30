@@ -1,0 +1,64 @@
+mkroot - Build simple bootable Linux system.
+
+This project uses a cross compiler toolchain (usually musl-cross-make) to
+build a toybox-based root filesystem and kernel that boot under qemu
+(or on real hardware if available).
+
+The tl;dr is you can go:
+
+  $ CROSS_COMPILE=prefix- ./mkroot.sh dropbear kernel
+  $ cd output/$ARCH
+  $ ./qemu-$ARCH.sh
+
+And it'll boot an emulated system under QEMU.
+
+Running ./mkroot.sh with no arguments and no $CROSS_COMPILE environment
+variable set builds a chroot for the host.
+
+  $ ./mkroot.sh
+  $ sudo chroot output/host/root /init
+  $ ls -l
+  $ exit
+
+This downloads toybox into the "packages" directory, builds a minimal root
+filesystem, and packages it up into a cpio file (ls output/*/*.cpio.gz)
+suitable for use as an initramfs.
+
+You can build additional things from the "module" directory by listing
+them on the command line, ala:
+
+  $ ./mkroot.sh dropbear distcc
+
+Use "-n" as the first argument if you're adding to an existing root filesystem
+you don't want to delete and rebuild.
+
+To build for a different target, specify a cross compiler prefix using
+the CROSS_COMPILE environent variable, ala:
+
+  $ CROSS_COMPILE=sh4-linux-musl- ./mkroot.sh
+
+The project is developed against musl-cross-make.
+https://github.com/richfelker/musl-cross-make project. Running the included
+mcm-buildall.sh script in that project's directory builds cross and native
+compilers for all supported targets (which takes a while).
+
+  $ cd ~
+  $ git clone https://github.com/richfelker/musl-cross-make mcm
+  $ cd mcm
+  $ ~/mkroot/mcm-buildall.sh
+  $ cd ~/mkroot
+  $ CROSS_COMPILE=~/mcm/output/sh4-linux-musl-cross/bin/sh4-linux-musl- \
+    ./mkroot.sh kernel
+
+The "kernel" module builds a bootable Linux kernel for the target (it
+recognizes all the musl-cross-make prefixes, for others you may have to
+set the environment variable $ARCH to the right type).
+
+  $ CROSS_COMPILE=armv5l-linux-musl-
+  $ PATH=~/mcm/output/${CROSS_COMPILE}cross/bin:"$PATH"
+  $ ./mkroot.sh dropbear kernel
+  $ cd output/armv5l
+  $ ./qemu-armv5l.sh
+  $ ls -l
+  $ cat /proc/cpuinfo 
+  $ exit
