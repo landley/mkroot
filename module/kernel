@@ -149,6 +149,12 @@ fi
 # Build kernel
 
 setupfor linux
+echo "$QEMU -nographic -no-reboot -m 256" \
+     "-append \"panic=1 HOST=$TARGET $KARGS\"" \
+     "-kernel $(basename "$VMLINUX") -initrd ${CROSS_BASE}root.cpio.gz" \
+     ${DTB:+-dtb "$(basename "$DTB")"} \
+     > "$OUTPUT/qemu-$TARGET.sh" &&
+chmod +x "$OUTPUT/qemu-$TARGET.sh" &&
 getminiconfig > "$OUTPUT/$TARGET.miniconf" &&
 make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG="$OUTPUT/$TARGET.miniconf" &&
 make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) || exit 1
@@ -158,12 +164,6 @@ then
   cp "$DTB" "$OUTPUT/$(basename "$DTB")" || exit 1
 fi
 
-cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")" &&
-echo "$QEMU -nographic -no-reboot -m 256" \
-     "-append \"panic=1 HOST=$TARGET $KARGS\"" \
-     "-kernel $(basename "$VMLINUX") -initrd ${CROSS_BASE}root.cpio.gz" \
-     ${DTB:+-dtb "$(basename "$DTB")"} \
-     > "$OUTPUT/qemu-$TARGET.sh" &&
-chmod +x "$OUTPUT/qemu-$TARGET.sh"
+cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")"
 cleanup
 
