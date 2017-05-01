@@ -85,6 +85,29 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
 CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND=y
 "
   DTB=arch/arm/boot/dts/versatile-pb.dtb
+elif [ "$TARGET" == i486 ] || [ "$TARGET" == i686 ]
+then
+  if [ "$TARGET" == i486 ]
+  then
+    QEMU="qemu-system-i386 -cpu 486"
+    KERNEL_CONFIG="CONFIG_M486=y"
+  else
+    QEMU="qemu-system-i386 -cpu pentium3"
+    KERNEL_CONFIG="CONFIG_MPENTIUMII=y"
+  fi
+  KARCH=x86
+  KARGS="console=ttyS0"
+  VMLINUX=arch/x86/boot/bzImage
+  CONFIG_MPENTIUMII=y
+  KERNEL_CONFIG="
+$KERNEL_CONFIG
+CONFIG_ACPI=y
+CONFIG_BLK_DEV_PIIX=y
+CONFIG_NETDEV_1000=y
+CONFIG_E1000=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+"
 elif [ "$TARGET" == mips ] || [ "$TARGET" == mipsel ]
 then
   QEMU="qemu-system-mips -M malta"
