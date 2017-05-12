@@ -161,7 +161,7 @@ route add default gw 10.0.2.2
 
 [ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo Type exit when done.
 [ -z "$CONSOLE" ] && CONSOLE=console
-exec /sbin/oneit -c /dev/"$CONSOLE" "$HANDOFF"
+exec /sbin/oneit -c /dev/"$CONSOLE" $HANDOFF
 EOF
 chmod +x "$ROOT"/init &&
 
