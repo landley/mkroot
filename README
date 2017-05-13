@@ -1,5 +1,7 @@
 mkroot - Build simple bootable Linux system.
 
+Mailing list: http://lists.landley.net/listinfo.cgi/mkroot-landley.net
+
 This project uses a cross compiler toolchain (usually musl-cross-make) to
 build a toybox-based root filesystem and kernel that boot under qemu
 (or on real hardware if available).
@@ -62,3 +64,4 @@ set the environment variable $ARCH to the right type).
   $ ls -l
   $ cat /proc/cpuinfo 
   $ exit
+
