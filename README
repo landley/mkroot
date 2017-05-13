@@ -1,12 +1,14 @@
 mkroot - Build simple bootable Linux system.
 
-Mailing list: http://lists.landley.net/listinfo.cgi/mkroot-landley.net
-
 This project uses a cross compiler toolchain (usually musl-cross-make) to
 build a toybox-based root filesystem and kernel that boot under qemu
 (or on real hardware if available).
 
-The tl;dr is you can go:
+Mailing list: http://lists.landley.net/listinfo.cgi/mkroot-landley.net
+
+--- Quick start
+
+You can go:
 
   $ CROSS_COMPILE=prefix- ./mkroot.sh dropbear kernel
   $ cd output/$ARCH
@@ -26,6 +28,8 @@ This downloads toybox into the "packages" directory, builds a minimal root
 filesystem, and packages it up into a cpio file (ls output/*/*.cpio.gz)
 suitable for use as an initramfs.
 
+--- Adding build modules
+
 You can build additional things from the "module" directory by listing
 them on the command line, ala:
 
@@ -33,6 +37,19 @@ them on the command line, ala:
 
 Use "-n" as the first argument if you're adding to an existing root filesystem
 you don't want to delete and rebuild.
+
+We provide a few modules to get you started, but aren't interested in
+turning mkroot into a Linux distro. If you need more packages, fork the
+repo and add your own modules. As long as you don't modify existing files
+you should be able to cleanly pull updates into your fork (without even
+a merge commit if you pull --ff).
+
+The "Linux From Scratch" and "Beyond Linux From Scratch" projects are a good
+source of additional package build instructions. Most of our long-term focus
+long-term is on native compiling under emulation, like the earlier
+http://landley.net/aboriginal/about.html project this replaced.
+
+--- Cross compiling
 
 To build for a different target, specify a cross compiler prefix using
 the CROSS_COMPILE environent variable, ala:
@@ -52,6 +69,8 @@ compilers for all supported targets (which takes a while).
   $ CROSS_COMPILE=~/mcm/output/sh4-linux-musl-cross/bin/sh4-linux-musl- \
     ./mkroot.sh kernel
 
+--- Building kernels for QEMU
+
 The "kernel" module builds a bootable Linux kernel for the target (it
 recognizes all the musl-cross-make prefixes, for others you may have to
 set the environment variable $ARCH to the right type).
@@ -65,3 +84,17 @@ set the environment variable $ARCH to the right type).
   $ cat /proc/cpuinfo 
   $ exit
 
+--- Hermetic build
+
+Mkroot uses toybox's "make install_airlock" to implement a "hermetic build",
+which means it tries to insulate itself from variations in the host build
+environment by providing its own build prerequisites. This means the first
+thing it does is build an "airlock" directory full of binaries it either
+built or symlinked out of the host $PATH, and then restricts the $PATH for
+the rest of the build to just that directory (plus the cross compiler).
+
+If you need to add extra things to the airlock, delete the old one (if any)
+and set HOST_EXTRA="list of commands" (space separated if there's more than
+one). For example:
+
+  ./clean.sh && HOST_EXTRA=mkimage CROSS_COMPILE=i686- ./mkroot.sh kernel
