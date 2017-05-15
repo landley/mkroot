@@ -29,7 +29,7 @@ make_toolchain()
   set -x &&
   PATH="$LP" make OUTPUT="$OUTPUT" TARGET="$TARGET" \
     GCC_CONFIG="--disable-nls --disable-libquadmath --disable-decimal-float $GCC_CONFIG" COMMON_CONFIG="$COMMON_CONFIG" \
-    install -j$(nproc)
+    install -j$(($(nproc)+1))
   set +x
 }
 
