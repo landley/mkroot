@@ -222,7 +222,7 @@ CONFIG_S390_GUEST=y
 "
 elif [ "$TARGET" == sh4 ]
 then
-  QEMU="qemu-system-sh4 -M r2d -monitor null -serial null -serial stdio"
+  QEMU="qemu-system-sh4 -M r2d -serial null -serial mon:stdio"
   KARCH=sh
   KARGS="console=ttySC1 noiotrap"
   VMLINUX=arch/sh/boot/zImage
