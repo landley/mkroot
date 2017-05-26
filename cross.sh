@@ -31,7 +31,9 @@ then
   for i in $(list)
   do
     mkdir -p output/$i
-    "$0" $i "$@" 2>&1 | tee output/$i/log.txt
+    {
+      "$0" $i "$@" 2>&1 || mv output/$i{,.failed}
+    } | tee output/$i/log.txt
   done
 
   exit
