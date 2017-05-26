@@ -264,3 +264,7 @@ fi
 cp "$VMLINUX" "$OUTPUT/$(basename "$VMLINUX")"
 cleanup
 
+echo === create "${CROSS_BASE}root.cpio.gz"
+
+(cd "$ROOT" && find . | cpio -o -H newc | gzip) > \
+  "$OUTPUT/${CROSS_BASE}root.cpio.gz"

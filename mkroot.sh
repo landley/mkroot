@@ -298,8 +298,3 @@ do
   . module/"$STAGE_NAME" || exit 1
   shift
 done
-
-echo === create "${CROSS_BASE}root.cpio.gz"
-
-(cd "$ROOT" && find . | cpio -o -H newc | gzip) > \
-  "$OUTPUT/${CROSS_BASE}root.cpio.gz"
