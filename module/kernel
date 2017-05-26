@@ -4,6 +4,7 @@ download 09b9ec0abfd7cf6aa2d09913f8cc6772c99d11d4 \
   https://kernel.org/pub/linux/kernel/v4.x/linux-4.11.tar.gz
 
 [ -z "$TARGET" ] && TARGET="${CROSS_BASE/-*/}"
+[ -z "$TARGET" ] && TARGET="$(uname -m)"
 
 # Add generic info to arch-specific part of miniconfig
 getminiconfig()

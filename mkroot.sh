@@ -100,20 +100,23 @@ download f3d9f5396a210fb2ad7d6309acb237751c50812f \
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
 
-# Provide known $PATH contents for build (mostly toybox), and filter out
-# host $PATH stuff that confuses build
+# When cross compiling, provide known $PATH contents for build (mostly toybox),
+# and filter out host $PATH stuff that confuses build
 
-if [ ! -e "$AIRLOCK/toybox" ]
+if [ ! -z "$CROSS_COMPILE" ]
 then
-  echo === airlock
+  if [ ! -e "$AIRLOCK/toybox" ]
+  then
+    echo === airlock
 
-  MYBUILD="$BUILD" setupfor toybox
-  CROSS_COMPILE= make defconfig &&
-  CROSS_COMPILE= make -j $(nproc) &&
-  CROSS_COMPILE= PREFIX="$AIRLOCK" make install_airlock || exit 1
-  cleanup
+    MYBUILD="$BUILD" setupfor toybox
+    CROSS_COMPILE= make defconfig &&
+    CROSS_COMPILE= make &&
+    CROSS_COMPILE= PREFIX="$AIRLOCK" make install_airlock || exit 1
+    cleanup
+  fi
+  export PATH="$CROSS_PATH:$AIRLOCK"
 fi
-export PATH="$CROSS_PATH:$AIRLOCK"
 
 # -n skips rebuilding base system, adds to existing $ROOT
 if [ "$1" == "-n" ]
