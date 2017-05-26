@@ -168,6 +168,7 @@ chmod +x "$ROOT"/init &&
 cat > "$ROOT"/etc/passwd << 'EOF' &&
 root::0:0:root:/home/root:/bin/sh
 guest:x:500:500:guest:/home/guest:/bin/sh
+nobody:x:65534:65534:nobody:/proc/self:/dev/null
 EOF
 
 cat > "$ROOT"/etc/group << 'EOF' &&
