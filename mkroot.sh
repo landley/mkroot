@@ -2,17 +2,30 @@
 
 if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
 then
-  echo "usage: $0 [-nd] [MODULE...]"
+  echo "usage: $0 [-n] [VAR=VALUE] [MODULE...]"
   echo
   echo Create root filesystem in '$ROOT'
   echo
-  echo "-n	Don't rebuild "'$ROOT, just build module(s)'
+  echo "-n	Don't rebuild "'$ROOT, just build module(s) over it'
 
   exit 1
 fi
 
-# Are we cross compiling?
+# Clear environment variables, passing through the bare minimum.
+[ -z "$NOCLEAR" ] &&
+  exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
+    CROSS_COMPILE="$CROSS_COMPILE" "$0" "$@"
 
+# Parse command line arguments, assign name=value and collecting $OVERLAY list
+while [ $# -ne 0 ]
+do
+  X="${1/=*/}"
+  Y="${1#*=}"
+  [ "${1/=/}" != "$1" ] && eval "$X=\$Y" || OVERLAY="$OVERLAY $1"
+  shift
+done
+
+# Are we cross compiling?
 if [ -z "$CROSS_COMPILE" ]
 then
   echo "Building natively"
@@ -28,7 +41,7 @@ else
   fi
 fi
 
-# Setup absolute paths (cd here to reset)
+# Absolute paths we can use from any directory
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
@@ -36,9 +49,8 @@ TOP="$PWD"
 [ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
-MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
-
 [ "$1" == "-n" ] || rm -rf "$ROOT"
+MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
@@ -48,6 +60,7 @@ then
 fi
 
 # Grab source package from URL, confirming SHA1 hash
+# Usage: download HASH URL
 download()
 {
   # You can stick extracted source in $DOWNLOAD and build will use that instead
@@ -68,6 +81,7 @@ download()
 }
 
 # Extract source tarball (or snapshot repo) to create disposable build dir.
+# Usage: setupfor PACKAGE
 setupfor()
 {
   PACKAGE="$(basename "$1")"
@@ -84,7 +98,8 @@ setupfor()
   fi
 }
 
-# Delete disposable build dir after a successful build
+# Delete disposable build dir after a successful build, remembered from setupfor
+# Usage: cleanup
 cleanup()
 {
   [ $? -ne 0 ] && exit 1
@@ -107,7 +122,7 @@ if [ ! -z "$CROSS_COMPILE" ]
 then
   if [ ! -e "$AIRLOCK/toybox" ]
   then
-    echo === airlock
+    echo === Create airlock dir
 
     MYBUILD="$BUILD" setupfor toybox
     CROSS_COMPILE= make defconfig &&
@@ -277,10 +292,9 @@ cleanup
 fi # -n
 
 # Build overlays(s)
-while [ $# -gt 0 ]
+for STAGE_NAME in $OVERLAY
 do
   cd "$TOP" &&
-  STAGE_NAME="$(basename "$1")" &&
   . module/"$STAGE_NAME" || exit 1
   shift
 done
