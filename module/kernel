@@ -51,21 +51,7 @@ CONFIG_ETHERNET=y
 
 # Target-specific info in an if/else staircase
 
-if [ "$TARGET" == aarch64 ]
-then
-  QEMU="qemu-system-aarch64 -M virt -cpu cortex-a57"
-  KARCH=arm64
-  KARGS="console=ttyAMA0"
-  VMLINUX=arch/arm64/boot/Image
-  KERNEL_CONFIG="
-CONFIG_SERIAL_OF_PLATFORM=y
-CONFIG_SERIAL_AMBA_PL011=y
-CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-CONFIG_RTC_CLASS=y
-CONFIG_RTC_HCTOSYS=y
-CONFIG_RTC_DRV_PL031=y
-"
-elif [ "$TARGET" == armv5l ]
+if [ "$TARGET" == armv5l ]
 then
   QEMU="qemu-system-arm -M versatilepb -net nic,model=rtl8139 -net user"
   KARCH=arm
@@ -96,12 +82,19 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
 CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND=y
 "
   DTB=arch/arm/boot/dts/versatile-pb.dtb
-elif [ "$TARGET" == armv7l ]
+elif [ "$TARGET" == armv7l ] || [ "$TARGET" == aarch64 ]
 then
-  QEMU="qemu-system-arm -M virt"
-  KARCH=arm
+  if [ "$TARGET" == aarch64 ]
+  then
+    QEMU="qemu-system-aarch64 -M virt -cpu cortex-a57"
+    KARCH=arm64
+    VMLINUX=arch/arm64/boot/Image
+  else
+    QEMU="qemu-system-arm -M virt"
+    KARCH=arm
+    VMLINUX=arch/arm/boot/zImage
+  fi
   KARGS="console=ttyAMA0"
-  VMLINUX=arch/arm/boot/zImage
   KERNEL_CONFIG="
 CONFIG_MMU=y
 CONFIG_ARCH_MULTI_V7=y
@@ -115,6 +108,7 @@ CONFIG_CPU_IDLE=y
 CONFIG_ARM_CPUIDLE=y
 CONFIG_KERNEL_MODE_NEON=y
 CONFIG_VIRTIO_BLK=y
+CONFIG_NET_CORE=y
 CONFIG_VIRTIO_NET=y
 CONFIG_SERIAL_AMBA_PL011=y
 CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
