@@ -129,7 +129,7 @@ elif [ "$TARGET" == i486 ] || [ "$TARGET" == i686 ] || [ "$TARGET" == x86_64 ]
 then
   if [ "$TARGET" == i486 ]
   then
-    QEMU="qemu-system-i386 -cpu 486"
+    QEMU="qemu-system-i386 -cpu 486 -global fw_cfg.dma_enabled=false"
     KERNEL_CONFIG="CONFIG_M486=y"
   elif [ "$TARGET" == i686 ]
   then
