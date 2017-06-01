@@ -9,6 +9,10 @@ download 09b9ec0abfd7cf6aa2d09913f8cc6772c99d11d4 \
 # Add generic info to arch-specific part of miniconfig
 getminiconfig()
 {
+  echo "# make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG=$TARGET.miniconf"
+  echo "# make ARCH=$KARCH -j \$(nproc)"
+  echo "# boot $VMLINUX"
+  echo
   echo "$KERNEL_CONFIG"
   echo "
 # CONFIG_EMBEDDED is not set
