@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
+if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ]
 then
   echo "usage: $0 [-n] [VAR=VALUE] [MODULE...]"
   echo
@@ -16,6 +16,7 @@ fi
   exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
     CROSS_COMPILE="$CROSS_COMPILE" "$0" "$@"
 
+[ "$1" == "-n" ] && N=1 && shift
 # Parse command line arguments, assign name=value and collecting $OVERLAY list
 while [ $# -ne 0 ]
 do
@@ -49,7 +50,7 @@ TOP="$PWD"
 [ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
-[ "$1" == "-n" ] || rm -rf "$ROOT"
+[ -z "$N" ] || rm -rf "$ROOT"
 MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
@@ -134,10 +135,9 @@ then
 fi
 
 # -n skips rebuilding base system, adds to existing $ROOT
-if [ "$1" == "-n" ]
+if [ ! -z "$N" ]
 then
-  shift
-  if [ ! -d "$ROOT" ] || [ -z "$1" ]
+  if [ ! -d "$ROOT" ] || [ -z "$OVERLAY" ]
   then
     echo "-n needs an existing $ROOT and build files"
     exit 1
@@ -296,5 +296,4 @@ for STAGE_NAME in $OVERLAY
 do
   cd "$TOP" &&
   . module/"$STAGE_NAME" || exit 1
-  shift
 done
