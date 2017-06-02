@@ -57,6 +57,9 @@ CONFIG_ETHERNET=y
 
 if [ "$TARGET" == armv5l ]
 then
+
+  # This could use the same VIRT board as armv7, but let's demonstrate a
+  # different one requiring a separate device tree binary.
   QEMU="qemu-system-arm -M versatilepb -net nic,model=rtl8139 -net user"
   KARCH=arm
   KARGS="console=ttyAMA0"
@@ -75,9 +78,15 @@ CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
 CONFIG_RTC_CLASS=y
 CONFIG_RTC_DRV_PL031=y
 CONFIG_RTC_HCTOSYS=y
-#CONFIG_SCSI_SYM53C8XX_2=y
-#CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=0
-#CONFIG_SCSI_SYM53C8XX_MMIO=y
+
+CONFIG_PCI=y
+CONFIG_PCI_VERSATILE=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_SCSI=y
+CONFIG_SCSI_LOWLEVEL=y
+CONFIG_SCSI_SYM53C8XX_2=y
+CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=0
+CONFIG_SCSI_SYM53C8XX_MMIO=y
 
 # The switch to device-tree-only added this mess
 CONFIG_ATAGS=y
