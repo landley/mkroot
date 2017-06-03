@@ -1,5 +1,8 @@
 #!/bin/bash
 
+### Parse command line arguments. Clear and set up environment variables.
+
+# Show usage for any unknown argument, ala "./mkroot.sh --help"
 if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ]
 then
   echo "usage: $0 [-n] [VAR=VALUE] [MODULE...]"
@@ -11,22 +14,22 @@ then
   exit 1
 fi
 
-# Clear environment variables, passing through the bare minimum.
+# Clear environment variables by restarting script w/bare minimum passed through
 [ -z "$NOCLEAR" ] &&
   exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
     CROSS_COMPILE="$CROSS_COMPILE" "$0" "$@"
 
+# Parse arguments: assign NAME=VALUE to env vars and collect rest in $MODULES
 [ "$1" == "-n" ] && N=1 && shift
-# Parse command line arguments, assign name=value and collecting $OVERLAY list
 while [ $# -ne 0 ]
 do
   X="${1/=*/}"
   Y="${1#*=}"
-  [ "${1/=/}" != "$1" ] && eval "$X=\$Y" || OVERLAY="$OVERLAY $1"
+  [ "${1/=/}" != "$1" ] && eval "$X=\$Y" || MODULES="$MODULES $1"
   shift
 done
 
-# Are we cross compiling?
+# If we're cross compiling, set appropriate environment variables.
 if [ -z "$CROSS_COMPILE" ]
 then
   echo "Building natively"
@@ -42,7 +45,7 @@ else
   fi
 fi
 
-# Absolute paths we can use from any directory
+# Work out absolute paths to all our working dirctories, create empty as needed
 TOP="$PWD"
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
@@ -60,7 +63,9 @@ then
   exit 1
 fi
 
-# Grab source package from URL, confirming SHA1 hash
+### Functions to download, extract, and clean up after source packages.
+
+# Grab source package from URL, confirming SHA1 hash.
 # Usage: download HASH URL
 download()
 {
@@ -81,7 +86,7 @@ download()
   done
 }
 
-# Extract source tarball (or snapshot repo) to create disposable build dir.
+# Extract source tarball (or snapshot a repo) to create disposable build dir.
 # Usage: setupfor PACKAGE
 setupfor()
 {
@@ -108,13 +113,15 @@ cleanup()
   cd .. && rm -rf "$PACKAGE"* || exit 1
 }
 
-echo === download source
+### Download source
 
 download f3d9f5396a210fb2ad7d6309acb237751c50812f \
   http://landley.net/toybox/downloads/toybox-0.7.3.tar.gz
 
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
+
+### Build airlock
 
 # When cross compiling, provide known $PATH contents for build (mostly toybox),
 # and filter out host $PATH stuff that confuses build
@@ -137,14 +144,14 @@ fi
 # -n skips rebuilding base system, adds to existing $ROOT
 if [ ! -z "$N" ]
 then
-  if [ ! -d "$ROOT" ] || [ -z "$OVERLAY" ]
+  if [ ! -d "$ROOT" ] || [ -z "$MODULES" ]
   then
     echo "-n needs an existing $ROOT and build files"
     exit 1
   fi
 else
 
-echo === Create files and directories
+### Create files and directories
 
 rm -rf "$ROOT" &&
 mkdir -p "$ROOT"/{etc,tmp,proc,sys,dev,home,mnt,root,usr/{bin,sbin,lib},var} &&
@@ -195,6 +202,8 @@ guest:x:500:
 EOF
 
 echo "nameserver 8.8.8.8" > "$ROOT"/etc/resolv.conf || exit 1
+
+### Build root filesystem binaries
 
 # toybox
 
@@ -291,8 +300,9 @@ cleanup
 
 fi # -n
 
-# Build overlays(s)
-for STAGE_NAME in $OVERLAY
+### Build modules listed on command line
+
+for STAGE_NAME in $MODULES
 do
   cd "$TOP" &&
   . module/"$STAGE_NAME" || exit 1
