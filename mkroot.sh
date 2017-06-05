@@ -65,11 +65,13 @@ fi
 
 ### Functions to download, extract, and clean up after source packages.
 
-# Grab source package from URL, confirming SHA1 hash.
-# Usage: download HASH URL
+# This is basically "wget $2"
 download()
 {
+  # Grab source package from URL, confirming SHA1 hash.
   # You can stick extracted source in $DOWNLOAD and build will use that instead
+  # Usage: download HASH URL
+
   FILE="$(basename "$2")"
   [ -d "$DOWNLOAD/${FILE/-*/}" ] && echo "$FILE" local && return 0
 
@@ -86,10 +88,12 @@ download()
   done
 }
 
-# Extract source tarball (or snapshot a repo) to create disposable build dir.
-# Usage: setupfor PACKAGE
+# This is basically "tar xvzCf $MYBUILD $DOWNLOAD/$1.tar.gz && cd $NEWDIR"
 setupfor()
 {
+  # Extract source tarball (or snapshot a repo) to create disposable build dir.
+  # Usage: setupfor PACKAGE
+
   PACKAGE="$(basename "$1")"
   echo === "$PACKAGE"
   tty -s && echo -en "\033]2;$CROSS_SHORT $STAGE_NAME $1\007"
@@ -104,10 +108,12 @@ setupfor()
   fi
 }
 
-# Delete disposable build dir after a successful build, remembered from setupfor
-# Usage: cleanup
+# This is basically "rm -rf $NEWDIR" (remembered from setupfor)
 cleanup()
 {
+  # Delete directory most recent setupfor created, or exit if build failed
+  # Usage: cleanup
+
   [ $? -ne 0 ] && exit 1
   [ -z "$PACKAGE" ] && exit 1
   cd .. && rm -rf "$PACKAGE"* || exit 1
