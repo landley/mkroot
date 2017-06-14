@@ -5,7 +5,7 @@
 # Show usage for any unknown argument, ala "./mkroot.sh --help"
 if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ]
 then
-  echo "usage: $0 [-n] [VAR=VALUE] [MODULE...]"
+  echo "usage: $0 [-n] [VAR=VALUE...] [MODULE...]"
   echo
   echo Create root filesystem in '$ROOT'
   echo
@@ -59,8 +59,9 @@ mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
 if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
 then
-  echo "This compiler can't create a static binary." >&2
-  exit 1
+  echo "Host compiler can't create a static binary." >&2
+  # Continue if we're cross compiling because maybe cross compiler can?
+  [ -z "$CROSS_COMPILE" ] && exit 1
 fi
 
 ### Functions to download, extract, and clean up after source packages.
