@@ -3,13 +3,14 @@
 ### Parse command line arguments. Clear and set up environment variables.
 
 # Show usage for any unknown argument, ala "./mkroot.sh --help"
-if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ]
+if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
 then
   echo "usage: $0 [-n] [VAR=VALUE...] [MODULE...]"
   echo
   echo Create root filesystem in '$ROOT'
   echo
   echo "-n	Don't rebuild "'$ROOT, just build module(s) over it'
+  echo "-d	Don't build, just download/verify source packages."
 
   exit 1
 fi
@@ -21,6 +22,7 @@ fi
 
 # Parse arguments: assign NAME=VALUE to env vars and collect rest in $MODULES
 [ "$1" == "-n" ] && N=1 && shift
+[ "$1" == "-d" ] && D=1 && shift
 while [ $# -ne 0 ]
 do
   X="${1/=*/}"
@@ -29,10 +31,21 @@ do
   shift
 done
 
+# Work out absolute paths to working dirctories (can override on cmdline)
+TOP="$PWD"
+[ -z "$BUILD" ] && BUILD="$TOP/build"
+[ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
+[ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
+
 # If we're cross compiling, set appropriate environment variables.
 if [ -z "$CROSS_COMPILE" ]
 then
   echo "Building natively"
+  if ! cc --static -xc - -o /dev/null <<< "int main(void) {return 0;}"
+  then
+    echo "Warning: host compiler can't create static binaries." >&2
+    sleep 3
+  fi
 else
   echo "Cross compiling"
   CROSS_PATH="$(dirname "$(which "${CROSS_COMPILE}cc")")"
@@ -44,25 +57,12 @@ else
     exit 1
   fi
 fi
-
-# Work out absolute paths to all our working dirctories, create empty as needed
-TOP="$PWD"
-[ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
-[ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
-[ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
 [ -z "$N" ] || rm -rf "$ROOT"
 MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
-
-if ! cc --static -xc - <<< "int main(void) {return 0;}" -o "$BUILD"/hello
-then
-  echo "Host compiler can't create a static binary." >&2
-  # Continue if we're cross compiling because maybe cross compiler can?
-  [ -z "$CROSS_COMPILE" ] && exit 1
-fi
 
 ### Functions to download, extract, and clean up after source packages.
 
@@ -156,7 +156,8 @@ then
     echo "-n needs an existing $ROOT and build files"
     exit 1
   fi
-else
+elif [ -z "$D" ]
+then
 
 ### Create files and directories
 
@@ -305,12 +306,17 @@ make allnoconfig KCONFIG_ALLCONFIG=mini.conf &&
 LDFLAGS=--static make install CONFIG_PREFIX="$ROOT" SKIP_STRIP=y -j $(nproc)
 cleanup
 
-fi # -n
+fi # skipped by -n or -d
 
 ### Build modules listed on command line
 
 for STAGE_NAME in $MODULES
 do
-  cd "$TOP" &&
-  . module/"$STAGE_NAME" || exit 1
+  cd "$TOP" || exit 1
+  if [ -z "$D" ]
+  then
+    . module/"$STAGE_NAME" || exit 1
+  else
+    eval "$(sed -n '/^download[^(]/{/\\$/b a;b b;:a;N;:b;p}' module/"$STAGE_NAME")"
+  fi
 done
