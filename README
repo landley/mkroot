@@ -1,6 +1,6 @@
 mkroot - simple linux system builder
 
-  Builds toybox-based root filesystem and kernel that can boot under qemu.
+  Compiles a toybox-based root filesystem and kernel that can boot under qemu.
 
   Mailing list: http://lists.landley.net/listinfo.cgi/mkroot-landley.net
 
@@ -9,6 +9,9 @@ build musl-cross-make and set up the mcm symlink first, as explained below:
 
   $ ./cross.sh sh4 ./mkroot dropbear distcc kernel
   $ (cd output/sh4 && ./qemu-sh4.sh)
+
+This project is a successor to https://landley.net/aboriginal/about.html
+and shares most of the same goals, with a much simpler implementation.
 
 --- Quick start
 
@@ -40,15 +43,14 @@ root filesystem. (The default is to delete and rebuild each time.)
   $ ./mkroot.sh -n kernel
 
 We provide a few module build scripts to get you started, but aren't interested
-in turning mkroot into a Linux distro. If you need more packages, fork the
-repo and add your own modules. As long as you don't modify existing files
-you should be able to cleanly pull updates into your fork (without even
-a merge commit if you pull --ff).
+in turning mkroot into a Linux distro. If you want to cross-compile more
+packages, fork the repo and add your own modules. As long as you don't modify
+existing files you should be able to cleanly pull updates into your fork
+(without even a merge commit if you pull --ff).
 
-The "Linux From Scratch" and "Beyond Linux From Scratch" projects are a good
-source of additional package build instructions. Most of our long-term focus
-long-term is on native compiling under emulation, like the earlier
-http://landley.net/aboriginal/about.html project this replaced.
+The "Linux From Scratch" (http://linuxfromscratch.org/lfs) and
+"Beyond Linux From Scratch" (http://linuxfromscratch.org/blfs) projects are
+a good source of additional package build instructions.
 
 --- Cross compiling
 
@@ -141,7 +143,7 @@ like so:
 
 Mkroot uses toybox's "make install_airlock" to implement a "hermetic build"
 when cross compiling, which means it tries to insulate itself from variations
-in the host build environment by providing its own build prerequisites.
+in host systems by providing its own build prerequisites.
 
 This means the first thing mkroot.sh builds when it sees CROSS_COMPILE set
 is an "airlock" directory full of all the binaries it will use (most supplied
@@ -161,3 +163,26 @@ If you need to add extra things to the airlock, delete the old one (if any,
 command line (space separated if there's more than one). For example:
 
   ./clean.sh && ./cross.sh i686 ./mkroot.sh HOST_EXTRA=mkimage kernel
+
+--- Downloading and building packages
+
+Source code for package builds is stored in the "download" directory,
+either as extracted source or as tarballs. The "download" function verifies
+each tarball's sha1sum, fetching a new one from the URL via wget as necessary.
+To download/verify source packages without building yet, use the "-d" option.
+
+If you provide a directory under download matching a package's name (often
+via "git clone"), the build will use that instead of fetching tarballs.
+Since mkroot doesn't apply patches to tarballs, the easy way to build modified
+source is to provide your own source directory under download.
+
+For example:
+
+  mkdir download
+  cd download
+  git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+
+Using extracted source is noticeably faster when building mulitple targets.
+(Re-extracting the Linux kernel source tarball takes a while, and copies
+of source directories are made with cp -s which creates a tree of symlinks
+to the original source, saving disk space and cache memory.)
