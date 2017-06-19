@@ -7,7 +7,8 @@
 # With no arguments, lists available targets.
 # Use target "all" to iterate through all targets.
 
-if [ ! -d mcm ]
+MCM="$(dirname "$(readlink -f "$0")")"/mcm
+if [ ! -d "$MCM" ]
 then
   echo "Create symlink 'mcm' to musl-cross-make output directory"
   exit 1
@@ -18,7 +19,7 @@ unset X Y
 # Display target list?
 list()
 {
-  ls mcm | sed 's/-.*//' | sort -u | xargs
+  ls "$MCM" | sed 's/-.*//' | sort -u | xargs
 }
 [ $# -eq 0 ] && list && exit
 
@@ -41,8 +42,8 @@ fi
 
 # Call command with CROSS_COMPILE= as its first argument
 
-Y=$(readlink -f mcm/$X-*-cross)
-X=$(basename $Y)
+Y=$(readlink -f "$MCM"/$X-*-cross)
+X=$(basename "$Y")
 X="$Y/bin/${X/-cross/-}"
 [ ! -e "${X}cc" ] && echo "${X}cc not found" && exit 1
 
