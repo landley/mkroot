@@ -25,6 +25,8 @@ make_toolchain()
     OUTPUT="$PWD/output/$TARGET-$TYPE"
   fi
 
+  [ ! -z "$NOCLEAN" ] && [ -e "$OUTPUT/bin/"*ld ] && return
+
   rm -rf build-"$TARGET" &&
   set -x &&
   PATH="$LP" make OUTPUT="$OUTPUT" TARGET="$TARGET" \
@@ -33,11 +35,11 @@ make_toolchain()
   set +x
 }
 
-rm -rf output host-* build-* *.log
+[ -z "$NOCLEAN" ] && rm -rf output host-* build-* *.log
 
 # Make i686 bootstrap compiler (no $TYPE, dynamically linked against host libc)
 # then build i686 static first to create host compiler for other static builds
-TARGET=i686-linux-musl make_toolchain 2>&1 | tee i686-host.log
+TARGET=i686-linux-musl make_toolchain 2>&1 | tee -a i686-host.log
 
 for i in i686:: \
          sh4::--enable-incomplete-targets \
@@ -55,6 +57,6 @@ do
   do
     echo === building $PART1
     TYPE=$j TARGET=${PART1}-linux-musl${PART2} GCC_CONFIG="$PART3" \
-      make_toolchain 2>&1 | tee ${PART1}-${j}.log
+      make_toolchain 2>&1 | tee -a ${PART1}-${j}.log
   done
 done
