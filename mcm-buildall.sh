@@ -47,7 +47,8 @@ for i in i686:: \
          "armv7m:eabi:--with-arch=armv7-m --with-mode=thumb --disable-libatomic --enable-default-pie" \
          armv7r:eabihf:"--with-arch=armv7-r --enable-default-pie" \
          aarch64:eabi: i486:: sh2eb:fdpic:--with-cpu=mj2 s390x:: \
-         x86_64:: mipsel:: mips:: powerpc:: microblaze:: mips64:: powerpc64::
+         x86_64:: mipsel:: mips:: powerpc:: microblaze:: mips64:: \
+         powerpc64:: powerpc64le::
 do
   PART1=${i/:*/}
   PART3=${i/*:/}
