@@ -214,8 +214,8 @@ CONFIG_POWER_RESET_SYSCON=y
     QEMU="qemu-system-mipsel -M malta"
 elif [ "$TARGET" == powerpc ]
 then
-  QEMU="qemu-system-ppc -M g3beige"
   KARCH=powerpc
+  QEMU="qemu-system-ppc -M g3beige"
   KARGS="console=ttyS0"
   VMLINUX=vmlinux
   KERNEL_CONFIG="
@@ -242,6 +242,31 @@ CONFIG_SERIAL_PMACZILOG=y
 CONFIG_SERIAL_PMACZILOG_TTYS=y
 CONFIG_SERIAL_PMACZILOG_CONSOLE=y
 CONFIG_BOOTX_TEXT=y
+"
+elif [ "$TARGET" == powerpc64le ]
+then
+  KARCH=powerpc
+  QEMU="qemu-system-ppc64 -M pseries -vga none"
+  KARGS="console=/dev/hvc0"
+  VMLINUX=vmlinux
+  KERNEL_CONFIG="CONFIG_PPC64=y
+CONFIG_PPC_PSERIES=y
+CONFIG_CPU_LITTLE_ENDIAN=y
+CONFIG_PPC_OF_BOOT_TRAMPOLINE=y
+
+CONFIG_BLK_DEV_SD=y
+CONFIG_SCSI_LOWLEVEL=y
+CONFIG_SCSI_IBMVSCSI=y
+CONFIG_ATA=y
+
+CONFIG_NET_VENDOR_IBM=y
+CONFIG_IBMVETH=y
+CONFIG_HVC_CONSOLE=y
+
+# None of this should be necessary
+CONFIG_PPC_TRANSACTIONAL_MEM=y
+CONFIG_PPC_DISABLE_WERROR=y
+CONFIG_SECTION_MISMATCH_WARN_ONLY=y
 "
 elif [ "$TARGET" = s390x ]
 then
