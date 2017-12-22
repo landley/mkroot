@@ -84,6 +84,10 @@ directory builds cross and native compilers for all supported targets
   $ CROSS_COMPILE=~/mcm/output/sh4-linux-musl-cross/bin/sh4-linux-musl- \
     ./mkroot.sh kernel
 
+Or you can download the resulting binary tarballs from:
+
+  http://b.zv.io/mcm/bin/
+
 If you create an "mcm" symlink under mkroot pointing to your musl-cross-make
 output directory, you can use the cross.sh wrapper script to quickly select
 the target to build, or use the target "all" to build all available targets.
