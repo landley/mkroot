@@ -183,18 +183,24 @@ then
   mountpoint -q dev/pts || mount -t devpts dev/pts dev/pts
 fi
 
-# Setup networking for QEMU (needs /proc)
-ifconfig eth0 10.0.2.15
-route add default gw 10.0.2.2
-[ "$(date +%s)" -lt 1000 ] && rdate 10.0.2.2 # or time-b.nist.gov
-[ "$(date +%s)" -lt 10000000 ] && ntpd -nq -p north-america.pool.ntp.org
+if [ $PID -eq 0 ]
+then
+  # Setup networking for QEMU (needs /proc)
+  ifconfig eth0 10.0.2.15
+  route add default gw 10.0.2.2
+  [ "$(date +%s)" -lt 1000 ] && rdate 10.0.2.2 # or time-b.nist.gov
+  [ "$(date +%s)" -lt 10000000 ] && ntpd -nq -p north-america.pool.ntp.org
 
-[ -z "$CONSOLE" ] &&
-  CONSOLE="$(sed -n 's@.* console=\(/dev/\)*\([^ ]*\).*@\2@p' /proc/cmdline)"
+  [ -z "$CONSOLE" ] &&
+    CONSOLE="$(sed -n 's@.* console=\(/dev/\)*\([^ ]*\).*@\2@p' /proc/cmdline)"
 
-[ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo Type exit when done.
-[ -z "$CONSOLE" ] && CONSOLE=console
-exec /sbin/oneit -c /dev/"$CONSOLE" $HANDOFF
+  [ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo Type exit when done.
+  [ -z "$CONSOLE" ] && CONSOLE=console
+  exec /sbin/oneit -c /dev/"$CONSOLE" $HANDOFF
+else
+  /bin/sh
+  umount /dev/pts /dev /sys /proc
+fi
 EOF
 chmod +x "$ROOT"/init &&
 
