@@ -82,7 +82,7 @@ download()
     [ "$(sha1sum "$DOWNLOAD/$FILE" 2>/dev/null | awk '{print $1}')" == "$1" ] &&
       echo "$FILE" confirmed &&
       break
-    rm -f $DOWNLOAD/${FILE/-*/}-*
+    rm -f $DOWNLOAD/${FILE/-[0-9]*/}-[0-9]*
     [ $X -eq 1 ] && break
     X=1
     wget "$2" -O "$DOWNLOAD/$FILE"
