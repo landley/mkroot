@@ -183,7 +183,7 @@ then
   mountpoint -q dev/pts || mount -t devpts dev/pts dev/pts
 fi
 
-if [ $PID -eq 0 ]
+if [ $$ -eq 1 ]
 then
   # Setup networking for QEMU (needs /proc)
   ifconfig eth0 10.0.2.15
