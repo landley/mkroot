@@ -18,7 +18,7 @@ fi
 # Clear environment variables by restarting script w/bare minimum passed through
 [ -z "$NOCLEAR" ] &&
   exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
-    CROSS_COMPILE="$CROSS_COMPILE" "$0" "$@"
+    CROSS_COMPILE="$CROSS_COMPILE" CROSS_SHORT="$CROSS_SHORT" "$0" "$@"
 
 # Parse arguments: assign NAME=VALUE to env vars and collect rest in $MODULES
 [ "$1" == "-n" ] && N=1 && shift
@@ -50,7 +50,7 @@ else
   echo "Cross compiling"
   CROSS_PATH="$(dirname "$(which "${CROSS_COMPILE}cc")")"
   CROSS_BASE="$(basename "$CROSS_COMPILE")"
-  CROSS_SHORT="${CROSS_BASE/-*/}"
+  [ -z "$CROSS_SHORT" ] && CROSS_SHORT="${CROSS_BASE/-*/}"
   if [ -z "$CROSS_PATH" ]
   then
     echo "no ${CROSS_COMPILE}cc in path" >&2
@@ -60,7 +60,7 @@ fi
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
 
-[ -z "$N" ] || rm -rf "$ROOT"
+[ -z "$N" ] && rm -rf "$ROOT"
 MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
@@ -117,6 +117,7 @@ cleanup()
 
   [ $? -ne 0 ] && exit 1
   [ -z "$PACKAGE" ] && exit 1
+  [ ! -z "$NO_CLEANUP" ] && return
   cd .. && rm -rf "$PACKAGE"* || exit 1
 }
 
@@ -326,3 +327,7 @@ do
     eval "$(sed -n '/^download[^(]/{/\\$/b a;b b;:a;N;:b;p}' module/"$STAGE_NAME")"
   fi
 done
+
+# Remove build directory if it's empty.
+rmdir "$MYBUILD" "$BUILD" 2>/dev/null
+exit 0
