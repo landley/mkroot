@@ -27,7 +27,7 @@ while [ $# -ne 0 ]
 do
   X="${1/=*/}"
   Y="${1#*=}"
-  [ "${1/=/}" != "$1" ] && eval "$X=\$Y" || MODULES="$MODULES $1"
+  [ "${1/=/}" != "$1" ] && eval "export $X=\"\$Y\"" || MODULES="$MODULES $1"
   shift
 done
 
