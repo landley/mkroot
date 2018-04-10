@@ -101,7 +101,7 @@ setupfor()
   cd "$MYBUILD" && rm -rf "$PACKAGE" || exit 1
   if [ -d "$DOWNLOAD/$PACKAGE" ]
   then
-    cp -la "$DOWNLOAD/$PACKAGE" "$PACKAGE" &&
+    cp -la "$DOWNLOAD/$PACKAGE/." "$PACKAGE" &&
     cd "$PACKAGE" || exit 1
   else
     tar xvaf "$DOWNLOAD/$PACKAGE"-*.tar.* &&
