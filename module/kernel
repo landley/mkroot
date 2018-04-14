@@ -133,6 +133,7 @@ CONFIG_RTC_HCTOSYS=y
 CONFIG_RTC_DRV_PL031=y
 
 CONFIG_NET_CORE=y
+CONFIG_VIRTIO_MENU=y
 CONFIG_VIRTIO_NET=y
 
 CONFIG_PCI=y
@@ -170,6 +171,8 @@ then
   CONFIG_MPENTIUMII=y
   KERNEL_CONFIG="
 $KERNEL_CONFIG
+
+CONFIG_UNWINDER_FRAME_POINTER=y
 
 CONFIG_PCI=y
 CONFIG_BLK_DEV_SD=y
@@ -338,6 +341,7 @@ echo "$QEMU -nographic -no-reboot -m 256" \
 chmod +x "$OUTPUT/qemu-$TARGET.sh" &&
 getminiconfig > "$OUTPUT/$TARGET.miniconf" &&
 make ARCH=$KARCH allnoconfig KCONFIG_ALLCONFIG="$OUTPUT/$TARGET.miniconf" &&
+rm include/config/auto.conf &&
 make ARCH=$KARCH CROSS_COMPILE="$CROSS_COMPILE" -j $(nproc) || exit 1
 
 if [ ! -z "$DTB" ]
