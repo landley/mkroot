@@ -5,6 +5,9 @@
 
 make_toolchain()
 {
+  # Change title bar
+  echo -en "\033]2;$TARGET-$TYPE\007"
+
   LP="$PATH"
   if [ -z "$TYPE" ]
   then
