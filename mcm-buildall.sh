@@ -61,6 +61,9 @@ mkdir -p "$OUTPUT"/log
 # then build i686 static first to create host compiler for other static builds
 TARGET=i686-linux-musl make_toolchain 2>&1 | tee -a i686-host.log
 
+# Without this i686-static build reuses the dynamically linked host build files.
+[ -z "$NOCLEAN" ] && make clean
+
 if [ $# -gt 0 ]
 then
   for i in "$@"
