@@ -186,7 +186,7 @@ For example:
   cd download
   git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
-Using extracted source is noticeably faster when building mulitple targets.
+Using extracted source is noticeably faster when building multiple targets.
 (Re-extracting the Linux kernel source tarball takes a while, and copies
 of source directories are made with cp -s which creates a tree of symlinks
 to the original source, saving disk space and cache memory.)
