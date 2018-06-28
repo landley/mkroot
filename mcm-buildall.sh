@@ -30,13 +30,18 @@ make_toolchain()
     OUTPUT="$OUTPUT/$TARGET-$TYPE"
   fi
 
-  [ ! -z "$NOCLEAN" ] && [ -e "$OUTPUT/bin/"*ld ] && return
+  [ -e "$OUTPUT/bin/"*ld ] && return
 
-  rm -rf build-"$TARGET" &&
+  rm -rf build/"$TARGET" &&
+  if [ -z "$CPUS" ]
+  then
+    CPUS="$(nproc)"
+    [ "$CPUS" != 1 ] && CPUS=$(($CPUS+1))
+  fi
   set -x &&
   PATH="$LP" make OUTPUT="$OUTPUT" TARGET="$TARGET" \
     GCC_CONFIG="--disable-nls --disable-libquadmath --disable-decimal-float $GCC_CONFIG" COMMON_CONFIG="$COMMON_CONFIG" \
-    install -j$(($(nproc)+1))
+    install -j$CPUS
   set +x
 }
 
@@ -54,7 +59,11 @@ make_tuple()
   done
 }
 
-[ -z "$NOCLEAN" ] && rm -rf "$OUTPUT" host-* build-* *.log
+if [ -z "$NOCLEAN" ]
+then
+  rm -rf build
+  [ $# -eq 0 ] && rm -rf "$OUTPUT" host-* *.log
+fi
 mkdir -p "$OUTPUT"/log
 
 # Make i686 bootstrap compiler (no $TYPE, dynamically linked against host libc)
@@ -66,12 +75,13 @@ TARGET=i686-linux-musl make_toolchain 2>&1 | tee -a i686-host.log
 
 if [ $# -gt 0 ]
 then
+  rm -rf build
   for i in "$@"
   do
     make_tuple "$i"
   done
 else
-  for i in i686:: x86_64:: x86_64:x32: sh4::--enable-incomplete-targets \
+  for i in i686:: m68k:: x86_64:: x86_64:x32: sh4::--enable-incomplete-targets \
          armv5l:eabihf:--with-arch=armv5t armv7l:eabihf:--with-arch=armv7-a \
          "armv7m:eabi:--with-arch=armv7-m --with-mode=thumb --disable-libatomic --enable-default-pie" \
          armv7r:eabihf:"--with-arch=armv7-r --enable-default-pie" \
