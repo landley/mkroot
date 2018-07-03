@@ -1,0 +1,39 @@
+#!/bin/echo Use "./mkroot.sh gcc"
+
+echo === download source
+
+download 810fb70bd721e1d9f446b6503afe0a9088b62986 \
+  https://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
+
+[ -z "$TARGET" ] && TARGET="${CROSS_BASE/-*/}"
+[ -z "$TARGET" ] && TARGET="$(uname -m)"
+
+setupfor gcc
+./contrib/download_prerequisites			&&
+mkdir build						&&
+cd build						&&
+../configure						\
+	--prefix=/tools					\
+	--target="$TARGET"				\
+	--with-sysroot="$ROOT"				\
+	--with-newlib					\
+	--without-headers				\
+	--with-local-prefix=/tools			\
+	--with-native-system-header-dir=/tools/include	\
+	--disable-nls					\
+	--disable-shared				\
+	--disable-multilib				\
+	--disable-decimal-float				\
+	--disable-threads				\
+	--disable-libatomic				\
+	--disable-libgomp				\
+	--disable-libitm				\
+	--disable-libmudflap				\
+	--disable-libquadmath				\
+	--disable-libsanitizer				\
+	--disable-libssp				\
+	--disable-libstdc++-v3				\
+	--enable-languages=c,c++			&&
+make -j							&&
+make install
+cleanup
