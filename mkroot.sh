@@ -89,6 +89,20 @@ download()
   done
 }
 
+checkout()
+{
+  # Usage: checkout PACKAGE CHECKOUTARG REPOSITORY
+  REPO="$DOWNLOAD/$1"
+
+  if [ "$(git -C "$REPO" remote get-url origin 2>/dev/null)" != "$3" ]; then
+    rm -rf "$REPO"
+    git clone -- "$3" "$REPO"
+  fi
+
+  git -C "$REPO" fetch origin "$2"
+  git -C "$REPO" -c advice.detachedHead=false checkout "$2"
+}
+
 # This is basically "tar xvzCf $MYBUILD $DOWNLOAD/$1.tar.gz && cd $NEWDIR"
 setupfor()
 {
