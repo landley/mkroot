@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# static linked i686 binaries are basically "poor man's x32".
+BOOTSTRAP=i686-linux-musl
+
 # Script to build all supported cross and native compilers using
 # https://github.com/richfelker/musl-cross-make
 
@@ -10,16 +13,19 @@ make_toolchain()
   # Change title bar
   echo -en "\033]2;$TARGET-$TYPE\007"
 
+  # Set cross compiler path
   LP="$PATH"
   if [ -z "$TYPE" ]
   then
     OUTPUT="$PWD/host-$TARGET"
+    EXTRASUB=y
   else
     if [ "$TYPE" == static ]
     then
-      HOST=i686-linux-musl
+      HOST=$BOOTSTRAP
       [ "$TARGET" = "$HOST" ] && LP="$PWD/host-$HOST/bin:$LP"
       TYPE=cross
+      EXTRASUB=y
     else
       HOST="$TARGET"
       export NATIVE=y
@@ -41,10 +47,13 @@ make_toolchain()
   set -x &&
   PATH="$LP" make OUTPUT="$OUTPUT" TARGET="$TARGET" \
     GCC_CONFIG="--disable-nls --disable-libquadmath --disable-decimal-float $GCC_CONFIG" COMMON_CONFIG="$COMMON_CONFIG" \
-    install -j$CPUS
+    install -j$CPUS || exit 1
   set +x
+  echo -e '#ifndef __MUSL__\n#define __MUSL__ 1\n#endif' \
+    >> "$OUTPUT/${EXTRASUB:+$TARGET/}include/features.h"
 }
 
+# Expand compressed target into binutils/gcc "tuple" and call make_toolchain
 make_tuple()
 {
   PART1=${1/:*/}
@@ -54,8 +63,10 @@ make_tuple()
   for j in static native
   do
     echo === building $PART1
+    set -o pipefail
     TYPE=$j TARGET=${PART1}-linux-musl${PART2} GCC_CONFIG="$PART3" \
       make_toolchain 2>&1 | tee "$OUTPUT"/log/${PART1}-${j}.log
+    [ $? -ne 0 ] && exit 1
   done
 }
 
@@ -66,9 +77,11 @@ then
 fi
 mkdir -p "$OUTPUT"/log
 
-# Make i686 bootstrap compiler (no $TYPE, dynamically linked against host libc)
-# then build i686 static first to create host compiler for other static builds
-TARGET=i686-linux-musl make_toolchain 2>&1 | tee -a i686-host.log
+# Make bootstrap compiler (no $TYPE, dynamically linked against host libc)
+# We build the rest of the cross compilers with this so they're linked against
+# musl-libc, because glibc doesn't fully support static linking and dynamic
+# binaries aren't really portable between distributions
+TARGET=$BOOTSTRAP make_toolchain 2>&1 | tee -a i686-host.log
 
 # Without this i686-static build reuses the dynamically linked host build files.
 [ -z "$NOCLEAN" ] && make clean
