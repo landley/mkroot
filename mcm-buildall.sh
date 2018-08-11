@@ -38,7 +38,7 @@ make_toolchain()
 
   [ -e "$OUTPUT/bin/"*ld ] && return
 
-  rm -rf build/"$TARGET" &&
+  rm -rf build/"$TARGET" "$OUTPUT" &&
   if [ -z "$CPUS" ]
   then
     CPUS="$(nproc)"
@@ -60,13 +60,34 @@ make_tuple()
   PART3=${1/*:/}
   PART2=${1:$((${#PART1}+1)):$((${#1}-${#PART3}-${#PART1}-2))}
 
-  for j in static native
+  # Do we need to rename this toolchain after building it?
+  RENAME=${PART1/*@/}
+  [ "$RENAME" == "$PART1" ] && RENAME=
+  PART1=${PART1/@*/}
+  TARGET=${PART1}-linux-musl${PART2} 
+
+  for TYPE in static native
   do
     echo === building $PART1
-    set -o pipefail
-    TYPE=$j TARGET=${PART1}-linux-musl${PART2} GCC_CONFIG="$PART3" \
-      make_toolchain 2>&1 | tee "$OUTPUT"/log/${PART1}-${j}.log
-    [ $? -ne 0 ] && exit 1
+    RETYPE=${TYPE/static/cross}
+    [ ! -z "$RENAME" ] && [ -e "$OUTPUT/$RENAME-$RETYPE/bin/$RENAME-ld" ] &&
+      return
+    TYPE=$TYPE TARGET=$TARGET GCC_CONFIG="$PART3" \
+      make_toolchain 2>&1 | tee "$OUTPUT"/log/${PART1}-${TYPE}.log
+    if [ ! -z "$RENAME" ]
+    then
+      if [ "$RETYPE" == cross ]
+      then
+        CONTEXT="$OUTPUT/$TARGET-$RETYPE/bin"
+        for i in "$CONTEXT/$TARGET"-*
+        do
+          X="$(echo $i | sed "s@.*/$TARGET-\([^-]*\)@\1@")"
+          mv "$CONTEXT/"{$TARGET,$RENAME}"-$X"
+        done
+        ln -sf "$RENAME-gcc" "$CONTEXT/$RENAME-cc"
+      fi
+      mv "$OUTPUT"/{$TARGET,$RENAME}-$RETYPE
+    fi
   done
 }
 
@@ -94,7 +115,8 @@ then
     make_tuple "$i"
   done
 else
-  for i in i686:: m68k:: x86_64:: x86_64:x32: sh4::--enable-incomplete-targets \
+  for i in i686:: m68k:: x86_64:: x86_64@x32:x32: \
+         sh4::--enable-incomplete-targets armv4l:eabihf:"--with-arch=armv5t --with-float=soft" \
          armv5l:eabihf:--with-arch=armv5t armv7l:eabihf:--with-arch=armv7-a \
          "armv7m:eabi:--with-arch=armv7-m --with-mode=thumb --disable-libatomic --enable-default-pie" \
          armv7r:eabihf:"--with-arch=armv7-r --enable-default-pie" \
