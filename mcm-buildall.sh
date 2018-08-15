@@ -1,18 +1,22 @@
 #!/bin/bash
 
-# static linked i686 binaries are basically "poor man's x32".
-BOOTSTRAP=i686-linux-musl
-
 # Script to build all supported cross and native compilers using
 # https://github.com/richfelker/musl-cross-make
+
+if [ "$1" == clean ]
+then
+  rm -rf "$OUTPUT" host-* *.log
+  make clean
+  exit
+fi
+
+# static linked i686 binaries are basically "poor man's x32".
+BOOTSTRAP=i686-linux-musl
 
 [ -z "$OUTPUT" ] && OUTPUT="$PWD/output"
 
 make_toolchain()
 {
-  # Change title bar
-  echo -en "\033]2;$TARGET-$TYPE\007"
-
   # Set cross compiler path
   LP="$PATH"
   if [ -z "$TYPE" ]
@@ -26,17 +30,23 @@ make_toolchain()
       [ "$TARGET" = "$HOST" ] && LP="$PWD/host-$HOST/bin:$LP"
       TYPE=cross
       EXTRASUB=y
+      LP="$OUTPUT/$HOST-cross/bin:$LP"
     else
       HOST="$TARGET"
       export NATIVE=y
+      LP="$OUTPUT/${RENAME:-$TARGET}-cross/bin:$LP"
     fi
-    LP="$OUTPUT/$HOST-cross/bin:$LP"
     COMMON_CONFIG="CC=\"$HOST-gcc -static --static\" CXX=\"$HOST-g++ -static --static\""
     export -n HOST
-    OUTPUT="$OUTPUT/$TARGET-$TYPE"
+    OUTPUT="$OUTPUT/${RENAME:-$TARGET}-$TYPE"
   fi
 
   [ -e "$OUTPUT/bin/"*ld ] && return
+
+  # Change title bar
+
+  echo === building $TARGET-$TYPE
+  echo -en "\033]2;$TARGET-$TYPE\007"
 
   rm -rf build/"$TARGET" "$OUTPUT" &&
   if [ -z "$CPUS" ]
@@ -51,6 +61,9 @@ make_toolchain()
   set +x
   echo -e '#ifndef __MUSL__\n#define __MUSL__ 1\n#endif' \
     >> "$OUTPUT/${EXTRASUB:+$TARGET/}include/features.h"
+
+  # Prevent i686-static build reusing dynamically linked host build files.
+  [ -z "$TYPE" ] && make clean
 }
 
 # Expand compressed target into binutils/gcc "tuple" and call make_toolchain
@@ -68,25 +81,19 @@ make_tuple()
 
   for TYPE in static native
   do
-    echo === building $PART1
-    RETYPE=${TYPE/static/cross}
-    [ ! -z "$RENAME" ] && [ -e "$OUTPUT/$RENAME-$RETYPE/bin/$RENAME-ld" ] &&
-      return
     TYPE=$TYPE TARGET=$TARGET GCC_CONFIG="$PART3" \
-      make_toolchain 2>&1 | tee "$OUTPUT"/log/${PART1}-${TYPE}.log
+      make_toolchain 2>&1 | tee "$OUTPUT"/log/${RENAME:-$PART1}-${TYPE}.log
     if [ ! -z "$RENAME" ]
     then
-      if [ "$RETYPE" == cross ]
+      if [ "$TYPE" == static ]
       then
-        CONTEXT="$OUTPUT/$TARGET-$RETYPE/bin"
+        CONTEXT="$OUTPUT/$RENAME-cross/bin"
         for i in "$CONTEXT/$TARGET"-*
         do
           X="$(echo $i | sed "s@.*/$TARGET-\([^-]*\)@\1@")"
-          mv "$CONTEXT/"{$TARGET,$RENAME}"-$X"
+          ln -s "$TARGET-$X" "$CONTEXT/$RENAME-$X"
         done
-        ln -sf "$RENAME-gcc" "$CONTEXT/$RENAME-cc"
       fi
-      mv "$OUTPUT"/{$TARGET,$RENAME}-$RETYPE
     fi
   done
 }
@@ -94,7 +101,6 @@ make_tuple()
 if [ -z "$NOCLEAN" ]
 then
   rm -rf build
-  [ $# -eq 0 ] && rm -rf "$OUTPUT" host-* *.log
 fi
 mkdir -p "$OUTPUT"/log
 
@@ -103,9 +109,6 @@ mkdir -p "$OUTPUT"/log
 # musl-libc, because glibc doesn't fully support static linking and dynamic
 # binaries aren't really portable between distributions
 TARGET=$BOOTSTRAP make_toolchain 2>&1 | tee -a i686-host.log
-
-# Without this i686-static build reuses the dynamically linked host build files.
-[ -z "$NOCLEAN" ] && make clean
 
 if [ $# -gt 0 ]
 then
@@ -116,7 +119,8 @@ then
   done
 else
   for i in i686:: m68k:: x86_64:: x86_64@x32:x32: \
-         sh4::--enable-incomplete-targets armv4l:eabihf:"--with-arch=armv5t --with-float=soft" \
+         sh4::--enable-incomplete-targets \
+         armv4l:eabihf:"--with-arch=armv5t --with-float=soft" \
          armv5l:eabihf:--with-arch=armv5t armv7l:eabihf:--with-arch=armv7-a \
          "armv7m:eabi:--with-arch=armv7-m --with-mode=thumb --disable-libatomic --enable-default-pie" \
          armv7r:eabihf:"--with-arch=armv7-r --enable-default-pie" \
