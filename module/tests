@@ -1,0 +1,19 @@
+#!/bin/echo Use "./mkroot.sh  gcc-6.3.0"
+
+echo === download source
+
+# download 928ab552666ee08eed645ff20ceb49d139205dea \
+#   http://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2
+
+echo === Native build static binutils
+
+echo ${CROSS_COMPILE}
+echo $TARGET
+echo $OUTPUT
+echo $ROOT
+echo $HOST
+env
+
+v2=${CROSS_COMPILE::-1}
+
+echo $v2

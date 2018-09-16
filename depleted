@@ -1,0 +1,12 @@
+cp ./binutils/addr2line ./binutils/ar ./binutils/cxxfilt \
+  ./binutils/elfedit ./binutils/nm-new ./binutils/objcopy \
+  ./binutils/objdump ./binutils/ranlib ./binutils/readelf \
+  ./binutils/size ./binutils/strings ./binutils/strip-new \
+  ./gas/as-new ./gprof/gprof ./ld/ld-new $ROOT/bin
+mv $ROOT/bin/cxxfilt $ROOT/bin/c++filt
+cp ../bfd/bfd.info ../binutils/binutils.info ../
+
+
+make -j $(nproc) && case $(uname -m) in
+  x86_64) echo "lol" ;;
+esac && make install -j4 || echo "help"
