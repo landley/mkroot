@@ -33,7 +33,7 @@ setupfor binutils
 rm -rf build && mkdir build && cd build &&
 CC=${CROSS_COMPILE}cc LD=${CROSS_COMPILE}ld AS=${CROSS_COMPILE}as ../configure --prefix=${ROOT} \
   --with-sysroot=${ROOT} --with-lib-path=${OUTPUT}/lib --build ${HOST} --host ${TARGET} \
-  --target=${TARGET} --disable-nls --disable-werror --enable-static && make -j $(nproc) || exit 1
+  --target=${TARGET} --disable-nls --disable-werror --enable-static && make LDFLAGS=-static -j $(nproc) || exit 1
 
 case $(uname -m) in
   x86_64) mkdir -v ${OUTPUT}/lib && ln -sv ${OUTPUT}/lib ${OUTPUT}/lib64 ;;
