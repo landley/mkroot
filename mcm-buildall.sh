@@ -3,13 +3,6 @@
 # Script to build all supported cross and native compilers using
 # https://github.com/richfelker/musl-cross-make
 
-COMPILE_FOR_ARCHES="i686:: m68k:: x86_64:: x86_64@x32:x32 sh4::--enable-incomplete-targets \
-armv4l:eabihf:"--with-arch=armv5t --with-float=soft" armv5l:eabihf:--with-arch=armv5t \
-armv7l:eabihf:--with-arch=armv7-a "armv7m:eabi:--with-arch=armv7-m --with-mode=thumb --disable-libatomic --enable-default-pie" \
-armv7r:eabihf:"--with-arch=armv7-r --enable-default-pie" aarch64:eabi: i486:: \
-sh2eb:fdpic:--with-cpu=mj2 s390x:: mipsel:: mips:: powerpc:: microblaze:: \
-mips64:: powerpc64:: powerpc64le::"
-
 if [ "$1" == clean ]
 then
   rm -rf "$OUTPUT" host-* *.log
@@ -84,7 +77,7 @@ make_tuple()
   RENAME=${PART1/*@/}
   [ "$RENAME" == "$PART1" ] && RENAME=
   PART1=${PART1/@*/}
-  TARGET=${PART1}-linux-musl${PART2} 
+  TARGET=${PART1}-linux-musl${PART2}
 
   for TYPE in static native
   do
