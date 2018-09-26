@@ -1,0 +1,11 @@
+#!/bin/echo Use "./mkroot.sh  gcc-6.3.0"
+
+echo
+echo "Showing some tests"
+echo $CROSS_COMPILE
+echo $OUTPUT
+echo $ROOT
+echo $CROSS_BASE
+
+# v2=${CROSS_COMPILE::-1}
+# echo $v2

@@ -1,0 +1,6 @@
+#!/bin/echo Use as an argument to mkroot.sh
+
+echo === created "${CROSS_BASE}root.cpio.gz"
+
+(cd "$ROOT" && find . | cpio -o -H newc | gzip) > \
+  "$OUTPUT/${CROSS_BASE}root.cpio.gz"

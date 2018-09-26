@@ -7,7 +7,7 @@ mkroot - simple linux system builder
 The tl;dr invocation is probably something like this, but you need to
 build musl-cross-make and set up the mcm symlink first, as explained below:
 
-  $ ./cross.sh sh4 ./mkroot dropbear distcc kernel
+  $ ./cross.sh sh4 ./mkroot dropbear kernel
   $ (cd output/sh4 && ./qemu-sh4.sh)
 
 This project is a successor to https://landley.net/aboriginal/about.html
@@ -18,7 +18,7 @@ and shares most of the same goals, with a much simpler implementation.
 Running ./mkroot.sh with no arguments and no $CROSS_COMPILE environment
 variable builds a root filesystem for the host.
 
-  $ ./mkroot.sh 
+  $ ./mkroot.sh
 
 This downloads toybox into the "download" directory (if it's not already
 there), and builds a minimal root filesystem in output/host. You can
@@ -128,7 +128,7 @@ the hard drive images work, and the emulator quits when you exit.
   $ cd output/armv5l
   $ ./qemu-armv5l.sh
     $ ls -l
-    $ cat /proc/cpuinfo 
+    $ cat /proc/cpuinfo
     $ ifconfig
     $ date
     $ exit
