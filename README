@@ -33,13 +33,13 @@ then chroot into it like this:
 You can build additional things from the "module" directory by listing
 them on the command line:
 
-  $ ./mkroot.sh dropbear distcc kernel
+  $ ./mkroot.sh dropbear kernel
 
 Use "-n" as the first argument to mkroot if you're adding to an existing
 root filesystem. (The default is to delete and rebuild each time.)
 
   $ ./mkroot.sh
-  $ ./mkroot.sh -n dropbear distcc
+  $ ./mkroot.sh -n dropbear
   $ ./mkroot.sh -n kernel
 
 We provide a few module build scripts to get you started, but aren't interested
@@ -79,8 +79,8 @@ directory builds cross and native compilers for all supported targets
   $ cd ~
   $ git clone https://github.com/richfelker/musl-cross-make mcm
   $ cd mcm
-  $ ~/mkroot/mcm-buildall.sh
-  $ cd ~/mkroot
+  $ ~/mkroot-modules/mcm-buildall.sh
+  $ cd ~/mkroot-modules
   $ CROSS_COMPILE=~/mcm/output/sh4-linux-musl-cross/bin/sh4-linux-musl- \
     ./mkroot.sh kernel
 
