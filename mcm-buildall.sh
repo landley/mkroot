@@ -77,7 +77,7 @@ make_tuple()
   RENAME=${PART1/*@/}
   [ "$RENAME" == "$PART1" ] && RENAME=
   PART1=${PART1/@*/}
-  TARGET=${PART1}-linux-musl${PART2} 
+  TARGET=${PART1}-linux-musl${PART2}
 
   for TYPE in static native
   do

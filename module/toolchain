@@ -44,7 +44,7 @@ cleanup
 
 echo === Native build static gcc
 
-setupfor binutils
+setupfor gcc
 
 tar -xf ../mpfr-3.1.5.tar.xz
 mv -v mpfr-3.1.5 mpfr
