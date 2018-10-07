@@ -3,17 +3,17 @@
 # Script to build all supported cross and native compilers using
 # https://github.com/richfelker/musl-cross-make
 
+# static linked i686 binaries are basically "poor man's x32".
+BOOTSTRAP=i686-linux-musl
+
+[ -z "$OUTPUT" ] && OUTPUT="$PWD/output"
+
 if [ "$1" == clean ]
 then
   rm -rf "$OUTPUT" host-* *.log
   make clean
   exit
 fi
-
-# static linked i686 binaries are basically "poor man's x32".
-BOOTSTRAP=i686-linux-musl
-
-[ -z "$OUTPUT" ] && OUTPUT="$PWD/output"
 
 make_toolchain()
 {
@@ -62,7 +62,18 @@ make_toolchain()
   echo -e '#ifndef __MUSL__\n#define __MUSL__ 1\n#endif' \
     >> "$OUTPUT/${EXTRASUB:+$TARGET/}include/features.h"
 
-  # Prevent i686-static build reusing dynamically linked host build files.
+  if [ ! -z "$RENAME" ] && [ "$TYPE" == cross ]
+  then
+    CONTEXT="output/$RENAME-cross/bin"
+    for i in "$CONTEXT/$TARGET-"*
+    do
+      X="$(echo $i | sed "s@.*/$TARGET-\([^-]*\)@\1@")"
+      ln -sf "$TARGET-$X" "$CONTEXT/$RENAME-$X"
+    done
+  fi
+
+  # Prevent cross compiler reusing dynamically linked host build files for
+  # $BOOTSTRAP arch
   [ -z "$TYPE" ] && make clean
 }
 
@@ -81,20 +92,8 @@ make_tuple()
 
   for TYPE in static native
   do
-    TYPE=$TYPE TARGET=$TARGET GCC_CONFIG="$PART3" \
+    TYPE=$TYPE TARGET=$TARGET GCC_CONFIG="$PART3" RENAME="$RENAME" \
       make_toolchain 2>&1 | tee "$OUTPUT"/log/${RENAME:-$PART1}-${TYPE}.log
-    if [ ! -z "$RENAME" ]
-    then
-      if [ "$TYPE" == static ]
-      then
-        CONTEXT="$OUTPUT/$RENAME-cross/bin"
-        for i in "$CONTEXT/$TARGET"-*
-        do
-          X="$(echo $i | sed "s@.*/$TARGET-\([^-]*\)@\1@")"
-          ln -s "$TARGET-$X" "$CONTEXT/$RENAME-$X"
-        done
-      fi
-    fi
   done
 }
 
@@ -108,7 +107,7 @@ mkdir -p "$OUTPUT"/log
 # We build the rest of the cross compilers with this so they're linked against
 # musl-libc, because glibc doesn't fully support static linking and dynamic
 # binaries aren't really portable between distributions
-TARGET=$BOOTSTRAP make_toolchain 2>&1 | tee -a i686-host.log
+TARGET=$BOOTSTRAP make_toolchain 2>&1 | tee -a "$OUTPUT/log/$BOOTSTRAP"-host.log
 
 if [ $# -gt 0 ]
 then
