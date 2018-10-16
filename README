@@ -92,13 +92,13 @@ If you create an "mcm" symlink under mkroot pointing to your musl-cross-make
 output directory, you can use the cross.sh wrapper script to quickly select
 the target to build, or use the target "all" to build all available targets.
 
-  $ ln -s cross ~/mcm/output mcm
+  $ ln -s ~/mcm/output mcm
   $ ./cross.sh # lists available targets
   $ ./cross.sh i686
   $ tail output/i686/log.txt
   $ (cd output/i686 && ./qemu-i686.sh)
     $ exit
-  $ ./clean.sh && ./cross.sh all ./mkroot.sh distcc kernel
+  $ ./clean.sh && ./cross.sh all ./mkroot.sh kernel
 
 All cross.sh does is set $CROSS_COMPILE to an appropriate value, then call
 the rest of its command line. To see this value, try:
