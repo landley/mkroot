@@ -123,8 +123,8 @@ cleanup()
 
 ### Download source
 
-download 5475bc98a0dd807061a4fc4ebad57f323b328dbc \
-  http://landley.net/toybox/downloads/toybox-0.7.7.tar.gz
+download 9b5b2be83e29c05e63a0751c84f23caad0bf5beb \
+  http://landley.net/toybox/downloads/toybox-0.7.8.tar.gz
 
 download 157d14d24748b4505b1a418535688706a2b81680 \
   http://www.busybox.net/downloads/busybox-1.24.1.tar.bz2
