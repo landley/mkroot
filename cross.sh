@@ -42,7 +42,7 @@ fi
 
 # Call command with CROSS_COMPILE= as its first argument
 
-Y=$(readlink -f "$MCM"/$X-*-cross)
+Y=$(readlink -f "$MCM"/$X-*cross)
 X=$(basename "$Y")
 X="$Y/bin/${X/-cross/-}"
 [ ! -e "${X}cc" ] && echo "${X}cc not found" && exit 1
