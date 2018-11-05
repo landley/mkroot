@@ -151,7 +151,8 @@ CONFIG_PATA_PLATFORM=y
 CONFIG_PATA_OF_PLATFORM=y
 CONFIG_ATA_GENERIC=y
 "
-elif [ "$TARGET" == i486 ] || [ "$TARGET" == i686 ] || [ "$TARGET" == x86_64 ]
+elif [ "$TARGET" == i486 ] || [ "$TARGET" == i686 ] ||
+     [ "$TARGET" == x86_64 ] || [ "$TARGET" == x32 ]
 then
   if [ "$TARGET" == i486 ]
   then
@@ -164,6 +165,11 @@ then
   else
     QEMU=qemu-system-x86_64
     KERNEL_CONFIG="CONFIG_64BIT=y"
+    [ "$TARGET" == x32 ] && KERNEL_CONFIG="
+$KERNEL_CONFIG
+CONFIG_IA32_EMULATION=y
+CONFIG_X86_X32=y
+"
   fi
   KARCH=x86
   KARGS="console=ttyS0"
