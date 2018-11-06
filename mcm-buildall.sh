@@ -75,6 +75,12 @@ make_toolchain()
   # Prevent cross compiler reusing dynamically linked host build files for
   # $BOOTSTRAP arch
   [ -z "$TYPE" ] && make clean
+  if [ "$TYPE" == native ]
+  then
+    [ ! -z "$(which mksquashfs 2>/dev/null)" ] &&
+      mksquashfs "$OUTPUT" "$OUTPUT.sqf" -all-root &&
+      [ -z "$CLEANUP" ] && rm -rf "$OUTPUT"
+  fi
 }
 
 # Expand compressed target into binutils/gcc "tuple" and call make_toolchain
@@ -90,6 +96,8 @@ make_tuple()
   PART1=${PART1/@*/}
   TARGET=${PART1}-linux-musl${PART2} 
 
+  [ -z "$NOCLEAN" ] && rm -rf build
+
   for TYPE in static native
   do
     TYPE=$TYPE TARGET=$TARGET GCC_CONFIG="$PART3" RENAME="$RENAME" \
@@ -97,10 +105,6 @@ make_tuple()
   done
 }
 
-if [ -z "$NOCLEAN" ]
-then
-  rm -rf build
-fi
 mkdir -p "$OUTPUT"/log
 
 # Make bootstrap compiler (no $TYPE, dynamically linked against host libc)
@@ -111,7 +115,6 @@ TARGET=$BOOTSTRAP make_toolchain 2>&1 | tee -a "$OUTPUT/log/$BOOTSTRAP"-host.log
 
 if [ $# -gt 0 ]
 then
-  rm -rf build
   for i in "$@"
   do
     make_tuple "$i"
