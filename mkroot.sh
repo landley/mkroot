@@ -193,7 +193,7 @@ then
   [ "$(date +%s)" -lt 10000000 ] && ntpd -nq -p north-america.pool.ntp.org
 
   [ -z "$CONSOLE" ] &&
-    CONSOLE="$(sed -rn 's@(.* |^)console=(/dev/)*([^ ]*).*@\3@p' /proc/cmdline)"
+    CONSOLE="$(sed -rn 's@(.* |^)console=(/dev/)*([[:alnum:]]*).*@\3@p' /proc/cmdline)"
 
   [ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo Type exit when done.
   [ -z "$CONSOLE" ] && CONSOLE=console
