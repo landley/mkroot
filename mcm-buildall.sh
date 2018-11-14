@@ -41,7 +41,11 @@ make_toolchain()
     OUTPUT="$OUTPUT/${RENAME:-$TARGET}-$TYPE"
   fi
 
-  [ -e "$OUTPUT/bin/"*ld ] && return
+  if [ -e "$OUTPUT.sqf" ] || [ -e "$OUTPUT/bin/$TARGET-ld" ] ||
+     [ -e "$OUTPUT/bin/ld" ]
+  then
+    return
+  fi
 
   # Change title bar
 
@@ -75,8 +79,13 @@ make_toolchain()
   # Prevent cross compiler reusing dynamically linked host build files for
   # $BOOTSTRAP arch
   [ -z "$TYPE" ] && make clean
+
   if [ "$TYPE" == native ]
   then
+    # gcc looks in "../usr/include" but not "/bin/../include" (relative to the
+    # executable). That means /usr/bin/gcc looks in /usr/usr/include, so that's
+    # not a fix either. So add a NOP symlink as a workaround for The Crazy.
+    ln -s . "$OUTPUT/usr" || exit 1
     [ ! -z "$(which mksquashfs 2>/dev/null)" ] &&
       mksquashfs "$OUTPUT" "$OUTPUT.sqf" -all-root &&
       [ -z "$CLEANUP" ] && rm -rf "$OUTPUT"
