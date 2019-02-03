@@ -1,1 +1,1 @@
-rm -rf airlock build output
+rm -rf airlock build output wrap
