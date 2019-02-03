@@ -3,7 +3,7 @@
 ### Parse command line arguments. Clear and set up environment variables.
 
 # Show usage for any unknown argument, ala "./mkroot.sh --help"
-if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ]
+if [ "${1:0:1}" == '-' ] && [ "$1" != '-n' ] && [ "$1" != '-d' ] && [ "$1" != "-l" ]
 then
   echo "usage: $0 [-n] [VAR=VALUE...] [MODULE...]"
   echo
@@ -11,6 +11,7 @@ then
   echo
   echo "-n	Don't rebuild "'$ROOT, just build module(s) over it'
   echo "-d	Don't build, just download/verify source packages."
+  echo "-l	Log every command run during build in cmdlog.txt"
 
   exit 1
 fi
@@ -21,8 +22,13 @@ fi
     CROSS_COMPILE="$CROSS_COMPILE" CROSS_SHORT="$CROSS_SHORT" "$0" "$@"
 
 # Parse arguments: assign NAME=VALUE to env vars and collect rest in $MODULES
-[ "$1" == "-n" ] && N=1 && shift
-[ "$1" == "-d" ] && D=1 && shift
+while true
+do
+  [ "$1" == "-n" ] && N=1 && shift ||
+  [ "$1" == "-d" ] && D=1 && shift ||
+  [ "$1" == "-l" ] && WRAPDIR=wrap && shift || break
+done
+
 while [ $# -ne 0 ]
 do
   X="${1/=*/}"
@@ -134,9 +140,17 @@ download 157d14d24748b4505b1a418535688706a2b81680 \
 # When cross compiling, provide known $PATH contents for build (mostly toybox),
 # and filter out host $PATH stuff that confuses build
 
+# We can also wrap the command $PATH and log every command line called.
+
 if [ ! -z "$CROSS_COMPILE" ]
 then
-  if [ ! -e "$AIRLOCK/toybox" ]
+  [ ! -z "$WRAPDIR" ] && WRAPDIR="$(readlink -f "$WRAPDIR")"
+  [ ! -z "$WRAPLOG" ] && WRAPLOG="$(readlink -f "$WRAPLOG")" ||
+    WRAPLOG="$OUTPUT/cmdlog.txt"
+  export WRAPLOG
+  mkdir -p "$(dirname "$WRAPLOG")"
+
+  if [ ! -e "$AIRLOCK/toybox" -o ! -z "$WRAPDIR" -a ! -e "$WRAPDIR/logwrapper" ]
   then
     echo === Create airlock dir
 
@@ -144,9 +158,15 @@ then
     CROSS_COMPILE= make defconfig &&
     CROSS_COMPILE= make &&
     CROSS_COMPILE= PREFIX="$AIRLOCK" make install_airlock || exit 1
+    if [ ! -z "$WRAPDIR" ]
+    then
+      PATH="$CROSS_PATH:$AIRLOCK" WRAPDIR="$WRAPDIR" WRAPLOG="$WRAPLOG" \
+        CROSS_COMPILE= scripts/record-commands "" || exit 1
+    fi
     cleanup
   fi
   export PATH="$CROSS_PATH:$AIRLOCK"
+  [ ! -z "$WRAPDIR" ] && PATH="$WRAPDIR:$PATH"
 fi
 
 # -n skips rebuilding base system, adds to existing $ROOT
