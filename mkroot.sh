@@ -21,7 +21,7 @@ fi
   exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
     CROSS_COMPILE="$CROSS_COMPILE" CROSS_SHORT="$CROSS_SHORT" "$0" "$@"
 
-# Parse arguments: assign NAME=VALUE to env vars and collect rest in $MODULES
+# Loop collecting initial -x arguments. (Simple, can't collate ala -nl .)
 while true
 do
   [ "$1" == "-n" ] && N=1 && shift ||
@@ -29,6 +29,7 @@ do
   [ "$1" == "-l" ] && WRAPDIR=wrap && shift || break
 done
 
+# Parse remaining args: assign NAME=VALUE to env vars, collect rest in $MODULES
 while [ $# -ne 0 ]
 do
   X="${1/=*/}"
@@ -36,12 +37,6 @@ do
   [ "${1/=/}" != "$1" ] && eval "export $X=\"\$Y\"" || MODULES="$MODULES $1"
   shift
 done
-
-# Work out absolute paths to working dirctories (can override on cmdline)
-TOP="$PWD"
-[ -z "$BUILD" ] && BUILD="$TOP/build"
-[ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
-[ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 
 # If we're cross compiling, set appropriate environment variables.
 if [ -z "$CROSS_COMPILE" ]
@@ -63,6 +58,12 @@ else
     exit 1
   fi
 fi
+
+# Work out absolute paths to working dirctories (can override on cmdline)
+TOP="$PWD"
+[ -z "$BUILD" ] && BUILD="$TOP/build"
+[ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
+[ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
 [ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
 
@@ -144,13 +145,18 @@ download 157d14d24748b4505b1a418535688706a2b81680 \
 
 if [ ! -z "$CROSS_COMPILE" ]
 then
-  [ ! -z "$WRAPDIR" ] && WRAPDIR="$(readlink -f "$WRAPDIR")"
-  [ ! -z "$WRAPLOG" ] && WRAPLOG="$(readlink -f "$WRAPLOG")" ||
-    WRAPLOG="$OUTPUT/cmdlog.txt"
-  export WRAPLOG
-  mkdir -p "$(dirname "$WRAPLOG")"
+  # This is here so it happens even if airlock already exists
+  if [ ! -z "$WRAPDIR" ]
+  then
+    WRAPDIR="$(readlink -f "$WRAPDIR")"
+    [ ! -z "$WRAPLOG" ] && WRAPLOG="$(readlink -f "$WRAPLOG")" ||
+      WRAPLOG="$OUTPUT/cmdlog.txt"
+    export WRAPLOG
+    mkdir -p "$(dirname "$WRAPLOG")"
+  fi
 
-  if [ ! -e "$AIRLOCK/toybox" -o ! -z "$WRAPDIR" -a ! -e "$WRAPDIR/logwrapper" ]
+  if [ ! -e "$AIRLOCK/toybox" ] || [ ! -z "$WRAPDIR" ] &&
+     [ ! -e "$WRAPDIR/logwrapper" ]
   then
     echo === Create airlock dir
 
@@ -160,11 +166,13 @@ then
     CROSS_COMPILE= PREFIX="$AIRLOCK" make install_airlock || exit 1
     if [ ! -z "$WRAPDIR" ]
     then
+      echo === Create command logging wrapper dir
       PATH="$CROSS_PATH:$AIRLOCK" WRAPDIR="$WRAPDIR" WRAPLOG="$WRAPLOG" \
         CROSS_COMPILE= scripts/record-commands "" || exit 1
     fi
     cleanup
   fi
+
   export PATH="$CROSS_PATH:$AIRLOCK"
   [ ! -z "$WRAPDIR" ] && PATH="$WRAPDIR:$PATH"
 fi
@@ -177,6 +185,8 @@ then
     echo "-n needs an existing $ROOT and build files"
     exit 1
   fi
+
+# -d skips everything but downloading packages
 elif [ -z "$D" ]
 then
 
