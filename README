@@ -143,6 +143,13 @@ like so:
     $ tail /dev/?db
   $ exit
 
+--- Module explanation
+
+- kernel   -- should be quite self explanatory
+- dropbear -- ssh server and client
+- dynamic  -- dynamic libraries
+- newcpio  -- builds a new initramfs
+
 --- Hermetic build
 
 Mkroot uses toybox's "make install_airlock" to implement a "hermetic build"
