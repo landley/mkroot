@@ -17,8 +17,10 @@ then
 fi
 
 # Clear environment variables by restarting script w/bare minimum passed through
+# => preserve proxy variables for those behind a proxy server.
 [ -z "$NOCLEAR" ] &&
   exec env -i NOCLEAR=1 HOME="$HOME" PATH="$PATH" \
+    $(env | grep -i _proxy=) \
     CROSS_COMPILE="$CROSS_COMPILE" CROSS_SHORT="$CROSS_SHORT" "$0" "$@"
 
 # Loop collecting initial -x arguments. (Simple, can't collate ala -nl .)
