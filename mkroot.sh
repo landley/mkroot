@@ -218,6 +218,9 @@ fi
 
 if [ $$ -eq 1 ]
 then
+  # Don't allow deferred initialization to crap messages over the shell prompt
+  echo 3 3 > /proc/sys/kernel/printk
+
   # Setup networking for QEMU (needs /proc)
   ifconfig eth0 10.0.2.15
   route add default gw 10.0.2.2
