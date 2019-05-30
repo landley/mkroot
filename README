@@ -86,7 +86,7 @@ directory builds cross and native compilers for all supported targets
 
 Or you can download the resulting binary tarballs from:
 
-  http://b.zv.io/mcm/bin/
+  https://mkroot.musl.cc/latest
 
 If you create an "mcm" symlink under mkroot pointing to your musl-cross-make
 output directory, you can use the cross.sh wrapper script to quickly select
