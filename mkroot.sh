@@ -175,6 +175,9 @@ then
     cleanup
   fi
 
+  # busybox is broken, you can't switch this _off_ in the build...
+  [ ! -e "$AIRLOCK/bzip2" ] && ln -s "$(which bzip2)" "$AIRLOCK/bzip2"
+
   export PATH="$CROSS_PATH:$AIRLOCK"
   [ ! -z "$WRAPDIR" ] && PATH="$WRAPDIR:$PATH"
 fi
