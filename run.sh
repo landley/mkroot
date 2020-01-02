@@ -4,11 +4,16 @@
 
 if [ $# -lt 1 ]
 then
-  ls output | grep -v '[.]failed' | xargs
-  exit
+  if [ $(ls -1 output | wc -l) -eq 1 ]
+  then
+    ARCH=$(ls -1 output)
+  else
+    ls output | grep -v '[.]failed' | xargs
+    exit
+  fi
+else
+  ARCH="$1"
+  shift
 fi
-
-ARCH="$1"
-shift
 
 cd output/$ARCH && ./qemu-$ARCH.sh "$@"
