@@ -63,14 +63,15 @@ fi
 
 # Work out absolute paths to working dirctories (can override on cmdline)
 TOP="$PWD"
+HOST=$(uname -m)
 [ -z "$BUILD" ] && BUILD="$TOP/build"
 [ -z "$DOWNLOAD" ] && DOWNLOAD="$TOP/download"
 [ -z "$AIRLOCK" ] && AIRLOCK="$TOP/airlock"
-[ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-host}"
+[ -z "$OUTPUT" ] && OUTPUT="$TOP/output/${CROSS_SHORT:-${HOST}}"
 [ -z "$ROOT" ] && ROOT="$OUTPUT/${CROSS_BASE}root"
 
 [ -z "$N" ] && rm -rf "$ROOT"
-MYBUILD="$BUILD/${CROSS_BASE:-host-}tmp"
+MYBUILD="$BUILD/${CROSS_BASE:-${HOST}-}tmp"
 mkdir -p "$MYBUILD" "$DOWNLOAD" || exit 1
 
 ### Functions to download, extract, and clean up after source packages.
