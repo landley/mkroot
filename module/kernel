@@ -1,7 +1,7 @@
 #!/bin/echo Use as an argument to mkroot.sh
 
-download 8685fffabe1ab8e6aaa2800dc0031d02273fa0a9 \
-  https://kernel.org/pub/linux/kernel/v5.x/linux-5.1.tar.gz
+download 90ce9015379f951b4da272f25302dfa0b0bc0123 \
+  https://kernel.org/pub/linux/kernel/v5.x/linux-5.4.7.tar.gz
 
 [ -z "$TARGET" ] && TARGET="${CROSS_BASE/-*/}"
 [ -z "$TARGET" ] && TARGET="$(uname -m)"
