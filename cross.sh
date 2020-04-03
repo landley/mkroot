@@ -1,16 +1,17 @@
 #!/bin/bash
 
-# Convenience wrapper to set CROSS_COMPILE variable to musl-cross-make pathname
-# using "mcm" symlink to musl-cross-make output directory.
+# Convenience wrapper to set CROSS_COMPILE variable from short name using "ccc"
+# symlink (Cross cc) to directory of cross compilers named $TARGET-*-cross.
+# Tested with musl-cross-make output directory.
 
-# Usage: ./cross.sh TARGET ./mkroot.sh 
+# Usage: ./cross.sh TARGET make defconfig toybox_clean root
 # With no arguments, lists available targets.
 # Use target "all" to iterate through all targets.
 
-MCM="$(dirname "$(readlink -f "$0")")"/mcm
-if [ ! -d "$MCM" ]
+CCC="$(dirname "$(readlink -f "$0")")"/ccc
+if [ ! -d "$CCC" ]
 then
-  echo "Create symlink 'mcm' to musl-cross-make output directory"
+  echo "Create symlink 'ccc' to cross compiler directory"
   exit 1
 fi
 
@@ -19,7 +20,7 @@ unset X Y
 # Display target list?
 list()
 {
-  ls "$MCM" | sed 's/-.*//' | sort -u | xargs
+  ls "$CCC" | sed 's/-.*//' | sort -u | xargs
 }
 [ $# -eq 0 ] && list && exit
 
@@ -42,7 +43,7 @@ fi
 
 # Call command with CROSS_COMPILE= as its first argument
 
-Y=$(readlink -f "$MCM"/$X-*cross)
+Y=$(readlink -f "$CCC"/$X-*cross)
 X=$(basename "$Y")
 X="$Y/bin/${X/-cross/-}"
 [ ! -e "${X}cc" ] && echo "${X}cc not found" && exit 1
