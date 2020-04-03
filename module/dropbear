@@ -7,8 +7,8 @@ echo === download source
 download a4d316c404ff54ca545ea71a27af7dbc29817088 \
   http://downloads.sf.net/libpng/zlib-1.2.8.tar.gz
 
-download 1b112e32da9af8f8aa0a6e6f64f440c039459a49 \
-  https://matt.ucc.asn.au/dropbear/releases/dropbear-2016.73.tar.bz2
+download 820ec2b8c869edbcf5ad1138777fc0f54349505c \
+  https://matt.ucc.asn.au/dropbear/releases/dropbear-2019.78.tar.bz2
 
 echo === Native build static zlib
 
@@ -27,7 +27,7 @@ setupfor dropbear
 # Repeat after me: "autoconf is useless"
 echo 'echo "$@"' > config.sub &&
 ZLIB="$(echo ../zlib*)" &&
-CFLAGS="-I $ZLIB -Os" LDFLAGS="--static -L $ZLIB" ./configure \
+CFLAGS="-I $ZLIB -O2" LDFLAGS="-L $ZLIB" ./configure --enable-static \
   --host=${CROSS_BASE%-} &&
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
 make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
