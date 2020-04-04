@@ -30,6 +30,7 @@ ZLIB="$(echo ../zlib*)" &&
 CFLAGS="-I $ZLIB -O2" LDFLAGS="-L $ZLIB" ./configure --enable-static \
   --host=${CROSS_BASE%-} &&
 sed -i 's@/usr/bin/dbclient@ssh@' options.h &&
+sed -i 's@\(#define NON_INETD_MODE\) 1@\1 0@' default_options.h &&
 make -j $(nproc) PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 SCPPROGRESS=1 &&
 ${CROSS_COMPILE}strip dropbearmulti &&
 mkdir -p "$ROOT/bin" &&
