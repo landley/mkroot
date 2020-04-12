@@ -88,11 +88,11 @@ Or you can download the resulting binary tarballs from:
 
   https://mkroot.musl.cc/latest
 
-If you create an "mcm" symlink under mkroot pointing to your musl-cross-make
+If you create an "ccc" symlink under mkroot pointing to your musl-cross-make
 output directory, you can use the cross.sh wrapper script to quickly select
 the target to build, or use the target "all" to build all available targets.
 
-  $ ln -s cross ~/mcm/output mcm
+  $ ln -s ~/mcm/output ccc
   $ ./cross.sh # lists available targets
   $ ./cross.sh i686
   $ tail output/i686/log.txt
