@@ -24,9 +24,9 @@ fi
 # Loop collecting initial -x arguments. (Simple, can't collate ala -nl .)
 while true
 do
-  [ "$1" == "-n" ] && N=1 && shift ||
-  [ "$1" == "-d" ] && D=1 && shift ||
-  [ "$1" == "-l" ] && WRAPDIR=wrap && shift || break
+  { [ "$1" == "-n" ] && N=1 && shift; } ||
+  { [ "$1" == "-d" ] && D=1 && shift; } ||
+  { [ "$1" == "-l" ] && WRAPDIR=wrap && shift; } || break
 done
 
 # Parse remaining args: assign NAME=VALUE to env vars, collect rest in $MODULES
