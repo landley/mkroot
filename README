@@ -1,3 +1,11 @@
+THIS PROJECT HAS BEEN MERGED INTO TOYBOX. This version is retained for
+historical purposes, new development occurs in the built-in toybox version.
+
+  https://landley.net/toybox/faq.html#mkroot
+  https://github.com/landley/toybox/blob/master/scripts/mkroot.sh
+
+------------------------------------------------------------------------------
+
 mkroot - simple linux system builder
 
   Compiles a toybox-based root filesystem and kernel that can boot under qemu.
